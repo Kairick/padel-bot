@@ -13,8 +13,6 @@ MONTHS = [
     "июля", "августа", "сентября", "октября", "ноября", "декабря",
 ]  # fmt: skip
 
-MAX_MESSAGE_LEN = 4000
-
 
 def day_button_label(day: date, today: date) -> str:
     delta = (day - today).days
@@ -41,30 +39,19 @@ def group_by_start(slots: list[CourtSlot]) -> list[tuple[datetime, list[CourtSlo
 
 
 def render_day(availability: Availability, venues: list[Venue], range_label: str) -> str:
-    lines = [f"📅 <b>{day_title(availability.day)}</b> · {escape(range_label)}", ""]
+    """Only the day header: slots themselves are shown as buttons."""
+    lines = [f"📅 <b>{day_title(availability.day)}</b> · {escape(range_label)}"]
     by_venue = availability.by_venue()
     failed = {v.key for v in availability.failed_venues}
 
     for venue in venues:
-        lines.append(f"🎾 <b>{escape(venue.name)}</b>")
-        slots = by_venue.get(venue.key, [])
-        if venue.key in failed and not slots:
-            lines.append("⚠️ не удалось получить расписание")
-        elif not slots:
-            lines.append("<i>свободных слотов нет</i>")
-        for start, items in group_by_start(slots):
-            courts = ", ".join(escape(s.court.name) for s in items)
-            price = fmt_price({s.price for s in items})
-            lines.append(f"<code>{start:%H:%M}</code>  {courts} · {price}")
-        if venue.key in failed and slots:
-            lines.append("⚠️ часть кортов не ответила")
-        lines.append("")
-
-    lines.append("Нажми на время, чтобы получить ссылку на бронь 👇")
-    text = "\n".join(lines)
-    if len(text) > MAX_MESSAGE_LEN:
-        text = text[: MAX_MESSAGE_LEN - 20].rsplit("\n", 1)[0] + "\n…"
-    return text
+        has_slots = bool(by_venue.get(venue.key))
+        if venue.key in failed:
+            status = "часть кортов не ответила" if has_slots else "не удалось получить расписание"
+            lines.append(f"⚠️ {escape(venue.name)}: {status}")
+        elif not has_slots:
+            lines.append(f"<i>{escape(venue.name)}: свободных слотов нет</i>")
+    return "\n".join(lines)
 
 
 def render_slot(venue: Venue, day: date, start: datetime, slots: list[CourtSlot]) -> str:

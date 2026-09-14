@@ -23,10 +23,10 @@ async def make_result(venues):
 async def test_render_day(venues):
     result = await make_result(venues)
     text = render_day(result, venues, "Весь день")
-    assert "Вторник, 15 сентября" in text
-    assert "<code>18:00</code>  Padel 1, Padel 2 · 80 ₾" in text
-    assert "<code>00:00</code>  Padel 2" in text
-    assert "не удалось получить расписание" in text
+    assert text.splitlines()[0] == "📅 <b>Вторник, 15 сентября</b> · Весь день"
+    assert "18:00" not in text
+    assert "⚠️ Grand Padel: не удалось получить расписание" in text
+    assert "Padel Port" not in text
 
 
 async def test_keyboards_callback_data_fits_telegram_limit(venues):
