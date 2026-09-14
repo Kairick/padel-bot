@@ -103,10 +103,12 @@ def day_keyboard(
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-def slot_keyboard(slots: list[CourtSlot], day: date, rng: str, lang: Lang) -> InlineKeyboardMarkup:
+def slot_keyboard(
+    links: list[tuple[CourtSlot, str]], day: date, rng: str, lang: Lang
+) -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
-    for s in sorted(slots, key=lambda s: s.court.name):
-        kb.button(text=f"{s.court.name} · {fmt_price({s.price})}", url=s.booking_url)
+    for s, url in links:
+        kb.button(text=f"{s.court.name} · {fmt_price({s.price})}", url=url)
     kb.adjust(2)
     kb.row(
         InlineKeyboardButton(

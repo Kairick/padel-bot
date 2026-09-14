@@ -44,7 +44,7 @@ async def test_keyboards_callback_data_fits_telegram_limit(venues, lang):
     markups = [
         day_keyboard(result, venues, "w", lang),
         days_keyboard(DAY, lang),
-        slot_keyboard(result.slots, DAY, "w", lang),
+        slot_keyboard([(s, s.booking_url) for s in result.slots], DAY, "w", lang),
     ]
     buttons = [b for m in markups for row in m.inline_keyboard for b in row]
     assert all(len(b.callback_data.encode()) <= 64 for b in buttons if b.callback_data)
@@ -59,10 +59,10 @@ async def test_render_slot(venues):
     ru = render_slot(venues[0], DAY, slots[0].start, slots, "ru")
     assert "18:00–18:59" in ru
     assert "• Padel 1 · 80 ₾" in ru
-    assert "выбери дату и время <b>18:00</b>" in ru
+    assert "оформление брони на <b>18:00</b>" in ru
     en = render_slot(venues[0], DAY, slots[0].start, slots, "en")
     assert "Free courts:" in en
-    assert "Pick the date and time <b>18:00</b>" in en
+    assert "checkout for <b>18:00</b>" in en
 
 
 @pytest.mark.parametrize(

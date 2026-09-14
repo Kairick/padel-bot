@@ -1,5 +1,7 @@
 import logging
 from datetime import date, datetime
+from typing import Any
+from urllib.parse import parse_qs, urlsplit
 
 import httpx
 
@@ -8,6 +10,17 @@ from padel_bot.reservio.models import RawSlot
 log = logging.getLogger(__name__)
 
 PAGE_LIMIT = 100
+
+ORDER_ITEMS = "order { id items { ... on AppointmentOrderItem { id time unavailabilityReason } } }"
+ORDER_QUERY = (
+    "query Order($input: bookingFrontByDomainQueryInput!, $orderInput: OrderInput!) "
+    "{ bookingFrontByDomain(input: $input) { ... on Business { id "
+    "order(orderInput: $orderInput) { id items { ... on AppointmentOrderItem { id } } } } } }"
+)
+SET_TIME_MUTATION = (
+    "mutation SetTime($input: SetTimeToAppointmentOrderItemInput!) "
+    "{ setTimeToAppointmentOrderItem(input: $input) { " + ORDER_ITEMS + " } }"
+)
 
 
 class ReservioError(Exception):
@@ -60,6 +73,73 @@ class ReservioClient:
                 break
             offset += PAGE_LIMIT
         return slots
+
+    async def create_checkout_url(
+        self,
+        subdomain: str,
+        business_id: str,
+        service_id: str,
+        resource_id: str | None,
+        start: datetime,
+    ) -> str:
+        """Create a draft order with court and time preselected, return its checkout link.
+
+        Mirrors what the booking page does: /booking?step=2 creates an order, then the
+        time is set via GraphQL. A draft order does not hold the slot.
+        """
+        if not resource_id:
+            raise ReservioError("checkout link needs a resource id")
+        base = f"https://{subdomain}.reservio.com"
+        graphql = f"{base}/api/graphql/booking-front"
+        try:
+            resp = await self._http.get(
+                f"{base}/booking",
+                params={"step": 2, "serviceId": service_id, "resourceId": resource_id},
+                headers={"Accept": "text/html"},
+                follow_redirects=False,
+            )
+            location = resp.headers.get("location", "")
+            order_id = parse_qs(urlsplit(location).query).get("orderId", [""])[0]
+            if not resp.is_redirect or not order_id:
+                raise ReservioError(f"no order created (HTTP {resp.status_code})")
+
+            data = await self._graphql(
+                graphql,
+                ORDER_QUERY,
+                {"input": {"domain": subdomain}, "orderInput": {"orderId": order_id}},
+            )
+            item_id = data["bookingFrontByDomain"]["order"]["items"][0]["id"]
+
+            data = await self._graphql(
+                graphql,
+                SET_TIME_MUTATION,
+                {
+                    "input": {
+                        "appointmentOrderItemId": item_id,
+                        "businessId": business_id,
+                        "orderId": order_id,
+                        "time": start.isoformat(),
+                    }
+                },
+            )
+            item = data["setTimeToAppointmentOrderItem"]["order"]["items"][0]
+            if not item.get("time") or item.get("unavailabilityReason"):
+                raise ReservioError(f"time not set: {item}")
+        except (httpx.HTTPError, KeyError, IndexError, TypeError, ValueError) as e:
+            raise ReservioError(f"checkout link failed for service {service_id}: {e}") from e
+        return f"{base}/order?orderId={order_id}&what=checkout"
+
+    async def _graphql(self, url: str, query: str, variables: dict[str, Any]) -> dict[str, Any]:
+        resp = await self._http.post(
+            url,
+            json={"query": query, "variables": variables},
+            headers={"Accept": "application/json"},
+        )
+        resp.raise_for_status()
+        payload = resp.json()
+        if payload.get("errors") or not payload.get("data"):
+            raise ReservioError(f"GraphQL error: {payload.get('errors')}")
+        return payload["data"]
 
 
 def parse_slot(item: dict) -> RawSlot:

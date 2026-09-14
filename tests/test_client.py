@@ -1,5 +1,5 @@
 import json
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 import httpx
@@ -43,6 +43,71 @@ async def test_follows_pagination(monkeypatch):
     slots = await client.get_slots("b1", "s1", date(2026, 9, 15), date(2026, 9, 15))
     await client.aclose()
     assert len(slots) == 1
+
+
+BOOKING = "https://pp.reservio.com/booking"
+GRAPHQL = "https://pp.reservio.com/api/graphql/booking-front"
+START = datetime.fromisoformat("2026-09-21T11:00:00+04:00")
+
+
+def gql_order(item_id: str = "item-1") -> httpx.Response:
+    order = {"id": "ord-1", "items": [{"id": item_id}]}
+    return httpx.Response(
+        200, json={"data": {"bookingFrontByDomain": {"id": "b1", "order": order}}}
+    )
+
+
+def gql_set_time(time: str | None) -> httpx.Response:
+    item = {"id": "item-1", "time": time, "unavailabilityReason": None}
+    order = {"id": "ord-1", "items": [item]}
+    return httpx.Response(200, json={"data": {"setTimeToAppointmentOrderItem": {"order": order}}})
+
+
+@respx.mock
+async def test_create_checkout_url():
+    booking = respx.get(BOOKING).mock(
+        return_value=httpx.Response(
+            307, headers={"location": "https://pp.reservio.com/order?orderId=ord-1&what=time"}
+        )
+    )
+    gql = respx.post(GRAPHQL).mock(
+        side_effect=[gql_order(), gql_set_time("2026-09-21T07:00:00+00:00")]
+    )
+    client = ReservioClient()
+    url = await client.create_checkout_url("pp", "b1", "s1", "r1", START)
+    await client.aclose()
+
+    assert url == "https://pp.reservio.com/order?orderId=ord-1&what=checkout"
+    params = booking.calls.last.request.url.params
+    assert (params["step"], params["serviceId"], params["resourceId"]) == ("2", "s1", "r1")
+    set_time = json.loads(gql.calls[1].request.content)["variables"]["input"]
+    assert set_time == {
+        "appointmentOrderItemId": "item-1",
+        "businessId": "b1",
+        "orderId": "ord-1",
+        "time": "2026-09-21T11:00:00+04:00",
+    }
+
+
+@respx.mock
+async def test_create_checkout_url_fails_when_time_not_set():
+    respx.get(BOOKING).mock(
+        return_value=httpx.Response(307, headers={"location": "/order?orderId=ord-1&what=time"})
+    )
+    respx.post(GRAPHQL).mock(side_effect=[gql_order(), gql_set_time(None)])
+    client = ReservioClient()
+    with pytest.raises(ReservioError):
+        await client.create_checkout_url("pp", "b1", "s1", "r1", START)
+    await client.aclose()
+
+
+@respx.mock
+async def test_create_checkout_url_fails_without_redirect():
+    respx.get(BOOKING).mock(return_value=httpx.Response(200, text="<html></html>"))
+    client = ReservioClient()
+    with pytest.raises(ReservioError):
+        await client.create_checkout_url("pp", "b1", "s1", "r1", START)
+    await client.aclose()
 
 
 @respx.mock

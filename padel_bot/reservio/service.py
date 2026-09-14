@@ -106,6 +106,29 @@ class AvailabilityService:
         slots.sort(key=lambda s: (s.start, s.venue.key, s.court.name))
         return Availability(day=day, slots=slots, failed_venues=list(failed.values()))
 
+    async def booking_links(self, slots: list[CourtSlot]) -> list[str]:
+        """Checkout links with time preselected, one per slot, in the same order.
+
+        Falls back to the plain court booking page if Reservio refuses to prepare an order.
+        """
+        results = await asyncio.gather(
+            *(
+                self._client.create_checkout_url(
+                    s.venue.subdomain, s.venue.business_id, s.service_id, s.resource_id, s.start
+                )
+                for s in slots
+            ),
+            return_exceptions=True,
+        )
+        links: list[str] = []
+        for s, result in zip(slots, results, strict=True):
+            if isinstance(result, BaseException):
+                log.warning("checkout link failed, using booking page: %s", result)
+                links.append(s.booking_url)
+            else:
+                links.append(result)
+        return links
+
     async def _get_raw(
         self, business_id: str, service_id: str, day: date, force_refresh: bool
     ) -> list[RawSlot]:

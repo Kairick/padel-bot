@@ -14,10 +14,28 @@ def dt(value: str) -> datetime:
 
 
 class FakeClient:
-    def __init__(self, data: dict[str, list[RawSlot]], failing: set[str] | None = None) -> None:
+    def __init__(
+        self,
+        data: dict[str, list[RawSlot]],
+        failing: set[str] | None = None,
+        checkout_failing: set[str] | None = None,
+    ) -> None:
         self.data = data
         self.failing = failing or set()
+        self.checkout_failing = checkout_failing or set()
         self.calls: list[tuple[str, date, date]] = []
+
+    async def create_checkout_url(
+        self,
+        subdomain: str,
+        business_id: str,
+        service_id: str,
+        resource_id: str | None,
+        start: datetime,
+    ) -> str:
+        if service_id in self.checkout_failing:
+            raise ReservioError("no checkout")
+        return f"https://{subdomain}.reservio.com/order?orderId=o-{service_id}&what=checkout"
 
     async def get_slots(self, business_id: str, service_id: str, date_from: date, date_to: date):
         self.calls.append((service_id, date_from, date_to))

@@ -55,9 +55,13 @@ TEXTS: dict[str, dict[Lang, str]] = {
     "venue_no_slots": {"ru": "свободных слотов нет", "en": "no free slots"},
     "free_courts": {"ru": "Свободные корты:", "en": "Free courts:"},
     "booking_hint": {
-        "ru": "Кнопка откроет страницу брони корта. Там выбери дату и время <b>{time}</b>.",
+        "ru": (
+            "Кнопка откроет оформление брони на <b>{time}</b>. "
+            "Останется ввести контакты и подтвердить."
+        ),
         "en": (
-            "The button opens the court's booking page. Pick the date and time <b>{time}</b> there."
+            "The button opens checkout for <b>{time}</b>. "
+            "Just enter your contact details and confirm."
         ),
     },
     "other_day": {"ru": "📅 Другой день", "en": "📅 Other day"},

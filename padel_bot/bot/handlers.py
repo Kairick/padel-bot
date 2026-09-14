@@ -113,9 +113,10 @@ async def on_slot(
         return await cb.answer(t(lang, "stale_button"), show_alert=True)
     venue = venues[callback_data.v]
     result = await availability.get_availability(day, RANGES[rng])
-    slots = [
-        s for s in result.by_venue().get(venue.key, []) if f"{s.start:%H%M}" == callback_data.hm
-    ]
+    slots = sorted(
+        (s for s in result.by_venue().get(venue.key, []) if f"{s.start:%H%M}" == callback_data.hm),
+        key=lambda s: s.court.name,
+    )
     if not slots:
         await cb.answer(t(lang, "slot_taken"), show_alert=True)
         text, markup = await build_day_view(availability, day, rng, lang)
@@ -123,8 +124,9 @@ async def on_slot(
             await cb.message.edit_text(text, reply_markup=markup)
         return
     await cb.answer()
+    links = await availability.booking_links(slots)
     await safe_edit(
         cb.message,
         render_slot(venue, day, slots[0].start, slots, lang),
-        slot_keyboard(slots, day, rng, lang),
+        slot_keyboard(list(zip(slots, links, strict=True)), day, rng, lang),
     )
