@@ -1,5 +1,7 @@
 from datetime import date
 
+import pytest
+
 from padel_bot.bot.formatting import render_day, render_slot
 from padel_bot.bot.keyboards import day_keyboard, days_keyboard, slot_keyboard
 from padel_bot.reservio.service import AvailabilityService
@@ -20,25 +22,33 @@ async def make_result(venues):
     return await svc.get_availability(DAY, now=dt("2026-09-15T09:00:00"))
 
 
-async def test_render_day(venues):
+async def test_render_day_ru(venues):
     result = await make_result(venues)
-    text = render_day(result, venues, "Весь день")
+    text = render_day(result, venues, "w", "ru")
     assert text.splitlines()[0] == "📅 <b>Вторник, 15 сентября</b> · Весь день"
     assert "18:00" not in text
     assert "⚠️ Grand Padel: не удалось получить расписание" in text
     assert "Padel Port" not in text
 
 
-async def test_keyboards_callback_data_fits_telegram_limit(venues):
+async def test_render_day_en(venues):
+    result = await make_result(venues)
+    text = render_day(result, venues, "e", "en")
+    assert text.splitlines()[0] == "📅 <b>Tuesday, 15 September</b> · Evening"
+    assert "⚠️ Grand Padel: couldn't load the schedule" in text
+
+
+@pytest.mark.parametrize("lang", ["ru", "en"])
+async def test_keyboards_callback_data_fits_telegram_limit(venues, lang):
     result = await make_result(venues)
     markups = [
-        day_keyboard(result, venues, "w"),
-        days_keyboard(DAY),
-        slot_keyboard(result.slots, DAY, "w"),
+        day_keyboard(result, venues, "w", lang),
+        days_keyboard(DAY, lang),
+        slot_keyboard(result.slots, DAY, "w", lang),
     ]
     buttons = [b for m in markups for row in m.inline_keyboard for b in row]
     assert all(len(b.callback_data.encode()) <= 64 for b in buttons if b.callback_data)
-    slot_buttons = [b for b in markups[0].inline_keyboard[2]]
+    slot_buttons = list(markups[0].inline_keyboard[2])
     assert [b.text for b in slot_buttons] == ["18:00 (2)", "00:00 (1)"]
     assert any(b.url and "booking?step=2" in b.url for b in buttons)
 
@@ -46,12 +56,30 @@ async def test_keyboards_callback_data_fits_telegram_limit(venues):
 async def test_render_slot(venues):
     result = await make_result(venues)
     slots = [s for s in result.slots if s.start.hour == 18]
-    text = render_slot(venues[0], DAY, slots[0].start, slots)
-    assert "18:00–18:59" in text
-    assert "• Padel 1 · 80 ₾" in text
+    ru = render_slot(venues[0], DAY, slots[0].start, slots, "ru")
+    assert "18:00–18:59" in ru
+    assert "• Padel 1 · 80 ₾" in ru
+    assert "выбери дату и время <b>18:00</b>" in ru
+    en = render_slot(venues[0], DAY, slots[0].start, slots, "en")
+    assert "Free courts:" in en
+    assert "Pick the date and time <b>18:00</b>" in en
 
 
-async def test_range_buttons_are_short(venues):
+@pytest.mark.parametrize(
+    ("lang", "expected"),
+    [
+        ("ru", ["Утро", "День", "Вечер", "✓ Все"]),
+        ("en", ["Morning", "Day", "Evening", "✓ All"]),
+    ],
+)
+async def test_range_buttons_are_short(venues, lang, expected):
     result = await make_result(venues)
-    row = day_keyboard(result, venues, "w").inline_keyboard[0]
-    assert [b.text for b in row] == ["Утро", "День", "Вечер", "✓ Все"]
+    row = day_keyboard(result, venues, "w", lang).inline_keyboard[0]
+    assert [b.text for b in row] == expected
+
+
+def test_days_keyboard_labels():
+    ru = [b.text for row in days_keyboard(DAY, "ru").inline_keyboard for b in row]
+    en = [b.text for row in days_keyboard(DAY, "en").inline_keyboard for b in row]
+    assert ru[:3] == ["Сегодня", "Завтра", "чт 17.09"]
+    assert en[:3] == ["Today", "Tomorrow", "Thu 17.09"]

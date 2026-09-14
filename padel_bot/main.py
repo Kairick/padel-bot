@@ -7,15 +7,16 @@ from aiogram.enums import ParseMode
 from aiogram.types import BotCommand
 
 from padel_bot.bot.handlers import router
+from padel_bot.bot.i18n import Lang, t
 from padel_bot.config import get_settings, load_venues
 from padel_bot.reservio.client import ReservioClient
 from padel_bot.reservio.service import AvailabilityService
 
-COMMANDS = [
-    BotCommand(command="start", description="Выбрать день"),
-    BotCommand(command="today", description="Свободные корты сегодня"),
-    BotCommand(command="tomorrow", description="Свободные корты завтра"),
-]
+COMMAND_KEYS = ["start", "today", "tomorrow"]
+
+
+def commands(lang: Lang) -> list[BotCommand]:
+    return [BotCommand(command=c, description=t(lang, f"cmd_{c}")) for c in COMMAND_KEYS]
 
 
 async def main() -> None:
@@ -34,7 +35,8 @@ async def main() -> None:
     dp = Dispatcher()
     dp.include_router(router)
     try:
-        await bot.set_my_commands(COMMANDS)
+        await bot.set_my_commands(commands("en"))
+        await bot.set_my_commands(commands("ru"), language_code="ru")
         await dp.start_polling(bot, availability=availability)
     finally:
         await client.aclose()

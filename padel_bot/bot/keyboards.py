@@ -5,6 +5,7 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from padel_bot.bot.formatting import day_button_label, fmt_price, group_by_start
+from padel_bot.bot.i18n import Lang, t
 from padel_bot.reservio.models import CourtSlot, Venue
 from padel_bot.reservio.service import WHOLE_DAY, Availability, TimeRange
 
@@ -12,14 +13,14 @@ BOOKING_WINDOW_DAYS = 7
 NOOP = "noop"
 DAYS = "days"
 
-RANGES: dict[str, tuple[str, TimeRange]] = {
-    "m": ("Утро", TimeRange(6, 13)),
-    "a": ("День", TimeRange(13, 17)),
-    "e": ("Вечер", TimeRange(17, 30)),
-    "w": ("Весь день", WHOLE_DAY),
+# Labels live in i18n under "range_<key>" and "range_btn_<key>".
+RANGES: dict[str, TimeRange] = {
+    "m": TimeRange(6, 13),
+    "a": TimeRange(13, 17),
+    "e": TimeRange(17, 30),
+    "w": WHOLE_DAY,
 }
-# Four buttons share one row, long labels get truncated by Telegram.
-RANGE_BUTTON_LABELS = {"w": "Все"}
+DEFAULT_RANGE = "w"
 
 
 class DayCb(CallbackData, prefix="d"):
@@ -35,6 +36,10 @@ class SlotCb(CallbackData, prefix="s"):
     hm: str  # HHMM of slot start
 
 
+def normalize_range(rng: str) -> str:
+    return rng if rng in RANGES else DEFAULT_RANGE
+
+
 def encode_day(day: date) -> str:
     return f"{day:%Y%m%d}"
 
@@ -43,28 +48,31 @@ def decode_day(value: str) -> date:
     return datetime.strptime(value, "%Y%m%d").date()
 
 
-def days_keyboard(today: date, rng: str = "w") -> InlineKeyboardMarkup:
+def days_keyboard(today: date, lang: Lang, rng: str = DEFAULT_RANGE) -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
     for i in range(BOOKING_WINDOW_DAYS):
         day = today + timedelta(days=i)
         kb.button(
-            text=day_button_label(day, today), callback_data=DayCb(day=encode_day(day), rng=rng)
+            text=day_button_label(day, today, lang),
+            callback_data=DayCb(day=encode_day(day), rng=rng),
         )
     kb.adjust(2, 3, 2)
     return kb.as_markup()
 
 
-def day_keyboard(availability: Availability, venues: list[Venue], rng: str) -> InlineKeyboardMarkup:
+def day_keyboard(
+    availability: Availability, venues: list[Venue], rng: str, lang: Lang
+) -> InlineKeyboardMarkup:
     day = encode_day(availability.day)
     rows: list[list[InlineKeyboardButton]] = []
 
     rows.append(
         [
             InlineKeyboardButton(
-                text=("✓ " if key == rng else "") + RANGE_BUTTON_LABELS.get(key, label),
+                text=("✓ " if key == rng else "") + t(lang, f"range_btn_{key}"),
                 callback_data=DayCb(day=day, rng=key).pack(),
             )
-            for key, (label, _) in RANGES.items()
+            for key in RANGES
         ]
     )
 
@@ -85,23 +93,24 @@ def day_keyboard(availability: Availability, venues: list[Venue], rng: str) -> I
 
     rows.append(
         [
-            InlineKeyboardButton(text="📅 Другой день", callback_data=DAYS),
+            InlineKeyboardButton(text=t(lang, "other_day"), callback_data=DAYS),
             InlineKeyboardButton(
-                text="🔄 Обновить", callback_data=DayCb(day=day, rng=rng, refresh=True).pack()
+                text=t(lang, "refresh"),
+                callback_data=DayCb(day=day, rng=rng, refresh=True).pack(),
             ),
         ]
     )
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-def slot_keyboard(slots: list[CourtSlot], day: date, rng: str) -> InlineKeyboardMarkup:
+def slot_keyboard(slots: list[CourtSlot], day: date, rng: str, lang: Lang) -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
     for s in sorted(slots, key=lambda s: s.court.name):
         kb.button(text=f"{s.court.name} · {fmt_price({s.price})}", url=s.booking_url)
     kb.adjust(2)
     kb.row(
         InlineKeyboardButton(
-            text="⬅️ Назад", callback_data=DayCb(day=encode_day(day), rng=rng).pack()
+            text=t(lang, "back"), callback_data=DayCb(day=encode_day(day), rng=rng).pack()
         )
     )
     return kb.as_markup()
