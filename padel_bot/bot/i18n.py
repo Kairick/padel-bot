@@ -70,6 +70,13 @@ TEXTS: dict[str, dict[Lang, str]] = {
     "refreshing": {"ru": "Обновляю…", "en": "Refreshing…"},
     "stale_button": {"ru": "Устаревшая кнопка", "en": "This button is outdated"},
     "slot_taken": {"ru": "Этот слот уже заняли 😕", "en": "This slot is already taken 😕"},
+    "stats_disabled": {
+        "ru": (
+            "Статистика выключена. "
+            "Добавь ADMIN_IDS={user_id} в настройки бота и перезапусти его."
+        ),
+        "en": "Stats are disabled. Add ADMIN_IDS={user_id} to the bot settings and restart it.",
+    },
     "cmd_start": {"ru": "Выбрать день", "en": "Pick a day"},
     "cmd_today": {"ru": "Свободные корты сегодня", "en": "Free courts today"},
     "cmd_tomorrow": {"ru": "Свободные корты завтра", "en": "Free courts tomorrow"},

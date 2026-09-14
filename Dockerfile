@@ -12,7 +12,7 @@ COPY padel_bot ./padel_bot
 COPY venues.yaml README.md ./
 RUN uv sync --frozen --no-dev
 
-RUN useradd --create-home bot
-USER bot
+# Runs as root on purpose: Fly.io volumes (stats database in /data) are mounted root-owned.
+RUN mkdir -p /data
 
 CMD ["/app/.venv/bin/padel-bot"]

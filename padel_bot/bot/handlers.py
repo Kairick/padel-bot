@@ -23,6 +23,7 @@ from padel_bot.bot.keyboards import (
     slot_keyboard,
 )
 from padel_bot.reservio.service import AvailabilityService, current_play_day
+from padel_bot.stats import Stats, format_summary
 
 log = logging.getLogger(__name__)
 router = Router()
@@ -51,21 +52,43 @@ async def safe_edit(message: Message, text: str, markup: InlineKeyboardMarkup) -
 
 @router.message(CommandStart())
 @router.message(Command("days"))
-async def cmd_start(message: Message) -> None:
+async def cmd_start(message: Message, stats: Stats) -> None:
     lang = lang_of(message.from_user)
+    stats.track_event("start")
     await message.answer(t(lang, "welcome"), reply_markup=days_keyboard(current_play_day(), lang))
 
 
+@router.message(Command("stats"))
+async def cmd_stats(
+    message: Message,
+    stats: Stats,
+    admin_ids: frozenset[int],
+    availability: AvailabilityService,
+) -> None:
+    user = message.from_user
+    if user is None:
+        return
+    if not admin_ids:
+        await message.answer(t(lang_of(user), "stats_disabled", user_id=user.id))
+        return
+    if user.id not in admin_ids:
+        return
+    venue_names = {v.key: v.name for v in availability.venues}
+    await message.answer(format_summary(stats.summary(), venue_names))
+
+
 @router.message(Command("today"))
-async def cmd_today(message: Message, availability: AvailabilityService) -> None:
+async def cmd_today(message: Message, availability: AvailabilityService, stats: Stats) -> None:
     lang = lang_of(message.from_user)
+    stats.track_event("day_view")
     text, markup = await build_day_view(availability, current_play_day(), DEFAULT_RANGE, lang)
     await message.answer(text, reply_markup=markup)
 
 
 @router.message(Command("tomorrow"))
-async def cmd_tomorrow(message: Message, availability: AvailabilityService) -> None:
+async def cmd_tomorrow(message: Message, availability: AvailabilityService, stats: Stats) -> None:
     lang = lang_of(message.from_user)
+    stats.track_event("day_view")
     day = current_play_day() + timedelta(days=1)
     text, markup = await build_day_view(availability, day, DEFAULT_RANGE, lang)
     await message.answer(text, reply_markup=markup)
@@ -86,9 +109,10 @@ async def on_days(cb: CallbackQuery) -> None:
 
 @router.callback_query(DayCb.filter())
 async def on_day(
-    cb: CallbackQuery, callback_data: DayCb, availability: AvailabilityService
+    cb: CallbackQuery, callback_data: DayCb, availability: AvailabilityService, stats: Stats
 ) -> None:
     lang = lang_of(cb.from_user)
+    stats.track_event("refresh" if callback_data.refresh else "day_view")
     await cb.answer(t(lang, "refreshing") if callback_data.refresh else None)
     if not isinstance(cb.message, Message):
         return
@@ -101,7 +125,7 @@ async def on_day(
 
 @router.callback_query(SlotCb.filter())
 async def on_slot(
-    cb: CallbackQuery, callback_data: SlotCb, availability: AvailabilityService
+    cb: CallbackQuery, callback_data: SlotCb, availability: AvailabilityService, stats: Stats
 ) -> None:
     lang = lang_of(cb.from_user)
     if not isinstance(cb.message, Message):
@@ -124,6 +148,7 @@ async def on_slot(
             await cb.message.edit_text(text, reply_markup=markup)
         return
     await cb.answer()
+    stats.track_event("slot_view", venue=venue.key, hour=slots[0].start.hour)
     links = await availability.booking_links(slots)
     await safe_edit(
         cb.message,

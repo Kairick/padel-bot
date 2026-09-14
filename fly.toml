@@ -4,6 +4,14 @@ primary_region = "fra"
 
 [build]
 
+[env]
+  STATS_DB_PATH = "/data/stats.sqlite3"
+
+# Persistent volume for the stats database: fly volumes create padel_data --size 1 --region fra
+[mounts]
+  source = "padel_data"
+  destination = "/data"
+
 [[vm]]
   size = "shared-cpu-1x"
   memory = "256mb"

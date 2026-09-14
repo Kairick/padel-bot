@@ -11,6 +11,7 @@ from padel_bot.bot.i18n import Lang, t
 from padel_bot.config import get_settings, load_venues
 from padel_bot.reservio.client import ReservioClient
 from padel_bot.reservio.service import AvailabilityService
+from padel_bot.stats import Stats, StatsMiddleware
 
 COMMAND_KEYS = ["start", "today", "tomorrow"]
 
@@ -32,15 +33,24 @@ async def main() -> None:
         settings.bot_token.get_secret_value(),
         default=DefaultBotProperties(parse_mode=ParseMode.HTML, link_preview_is_disabled=True),
     )
+    stats = Stats(settings.stats_db_path)
     dp = Dispatcher()
+    dp.message.outer_middleware(StatsMiddleware(stats))
+    dp.callback_query.outer_middleware(StatsMiddleware(stats))
     dp.include_router(router)
     try:
         await bot.set_my_commands(commands("en"))
         await bot.set_my_commands(commands("ru"), language_code="ru")
-        await dp.start_polling(bot, availability=availability)
+        await dp.start_polling(
+            bot,
+            availability=availability,
+            stats=stats,
+            admin_ids=frozenset(settings.admin_ids),
+        )
     finally:
         await client.aclose()
         await bot.session.close()
+        stats.close()
 
 
 def run() -> None:

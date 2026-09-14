@@ -1,10 +1,11 @@
 from functools import lru_cache
 from pathlib import Path
+from typing import Annotated
 from zoneinfo import ZoneInfo
 
 import yaml
-from pydantic import BaseModel, SecretStr
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import BaseModel, SecretStr, field_validator
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 from padel_bot.reservio.models import Venue
 
@@ -20,6 +21,16 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     venues_file: Path = ROOT / "venues.yaml"
     reservio_api_url: str = "https://api.reservio.com"
+    stats_db_path: Path = ROOT / "data" / "stats.sqlite3"
+    # Telegram user ids allowed to use /stats, comma separated in env: ADMIN_IDS=123,456
+    admin_ids: Annotated[list[int], NoDecode] = []
+
+    @field_validator("admin_ids", mode="before")
+    @classmethod
+    def _split_admin_ids(cls, value: object) -> object:
+        if isinstance(value, str):
+            return [int(part) for part in value.replace(" ", "").split(",") if part]
+        return value
 
 
 class VenuesFile(BaseModel):
