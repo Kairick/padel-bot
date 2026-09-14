@@ -49,3 +49,9 @@ async def test_render_slot(venues):
     text = render_slot(venues[0], DAY, slots[0].start, slots)
     assert "18:00–18:59" in text
     assert "• Padel 1 · 80 ₾" in text
+
+
+async def test_range_buttons_are_short(venues):
+    result = await make_result(venues)
+    row = day_keyboard(result, venues, "w").inline_keyboard[0]
+    assert [b.text for b in row] == ["Утро", "День", "Вечер", "✓ Все"]

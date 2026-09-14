@@ -18,6 +18,8 @@ RANGES: dict[str, tuple[str, TimeRange]] = {
     "e": ("Вечер", TimeRange(17, 30)),
     "w": ("Весь день", WHOLE_DAY),
 }
+# Four buttons share one row, long labels get truncated by Telegram.
+RANGE_BUTTON_LABELS = {"w": "Все"}
 
 
 class DayCb(CallbackData, prefix="d"):
@@ -59,7 +61,7 @@ def day_keyboard(availability: Availability, venues: list[Venue], rng: str) -> I
     rows.append(
         [
             InlineKeyboardButton(
-                text=("✓ " if key == rng else "") + label,
+                text=("✓ " if key == rng else "") + RANGE_BUTTON_LABELS.get(key, label),
                 callback_data=DayCb(day=day, rng=key).pack(),
             )
             for key, (label, _) in RANGES.items()
