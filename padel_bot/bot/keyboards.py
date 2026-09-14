@@ -1,0 +1,105 @@
+from datetime import date, datetime, timedelta
+
+from aiogram.filters.callback_data import CallbackData
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.utils.keyboard import InlineKeyboardBuilder
+
+from padel_bot.bot.formatting import day_button_label, fmt_price, group_by_start
+from padel_bot.reservio.models import CourtSlot, Venue
+from padel_bot.reservio.service import WHOLE_DAY, Availability, TimeRange
+
+BOOKING_WINDOW_DAYS = 7
+NOOP = "noop"
+DAYS = "days"
+
+RANGES: dict[str, tuple[str, TimeRange]] = {
+    "m": ("Утро", TimeRange(6, 13)),
+    "a": ("День", TimeRange(13, 17)),
+    "e": ("Вечер", TimeRange(17, 30)),
+    "w": ("Весь день", WHOLE_DAY),
+}
+
+
+class DayCb(CallbackData, prefix="d"):
+    day: str  # YYYYMMDD
+    rng: str
+    refresh: bool = False
+
+
+class SlotCb(CallbackData, prefix="s"):
+    day: str
+    rng: str
+    v: int  # venue index
+    hm: str  # HHMM of slot start
+
+
+def encode_day(day: date) -> str:
+    return f"{day:%Y%m%d}"
+
+
+def decode_day(value: str) -> date:
+    return datetime.strptime(value, "%Y%m%d").date()
+
+
+def days_keyboard(today: date, rng: str = "w") -> InlineKeyboardMarkup:
+    kb = InlineKeyboardBuilder()
+    for i in range(BOOKING_WINDOW_DAYS):
+        day = today + timedelta(days=i)
+        kb.button(
+            text=day_button_label(day, today), callback_data=DayCb(day=encode_day(day), rng=rng)
+        )
+    kb.adjust(2, 3, 2)
+    return kb.as_markup()
+
+
+def day_keyboard(availability: Availability, venues: list[Venue], rng: str) -> InlineKeyboardMarkup:
+    day = encode_day(availability.day)
+    rows: list[list[InlineKeyboardButton]] = []
+
+    rows.append(
+        [
+            InlineKeyboardButton(
+                text=("✓ " if key == rng else "") + label,
+                callback_data=DayCb(day=day, rng=key).pack(),
+            )
+            for key, (label, _) in RANGES.items()
+        ]
+    )
+
+    by_venue = availability.by_venue()
+    for idx, venue in enumerate(venues):
+        groups = group_by_start(by_venue.get(venue.key, []))
+        if not groups:
+            continue
+        rows.append([InlineKeyboardButton(text=f"— {venue.name} —", callback_data=NOOP)])
+        buttons = [
+            InlineKeyboardButton(
+                text=f"{start:%H:%M} ({len(items)})",
+                callback_data=SlotCb(day=day, rng=rng, v=idx, hm=f"{start:%H%M}").pack(),
+            )
+            for start, items in groups
+        ]
+        rows += [buttons[i : i + 4] for i in range(0, len(buttons), 4)]
+
+    rows.append(
+        [
+            InlineKeyboardButton(text="📅 Другой день", callback_data=DAYS),
+            InlineKeyboardButton(
+                text="🔄 Обновить", callback_data=DayCb(day=day, rng=rng, refresh=True).pack()
+            ),
+        ]
+    )
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def slot_keyboard(slots: list[CourtSlot], day: date, rng: str) -> InlineKeyboardMarkup:
+    kb = InlineKeyboardBuilder()
+    for s in sorted(slots, key=lambda s: s.court.name):
+        kb.button(text=f"{s.court.name} · {fmt_price({s.price})}", url=s.booking_url)
+    kb.adjust(2)
+    kb.row(
+        InlineKeyboardButton(
+            text="⬅️ Назад", callback_data=DayCb(day=encode_day(day), rng=rng).pack()
+        )
+    )
+    return kb.as_markup()

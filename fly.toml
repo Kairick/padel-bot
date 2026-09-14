@@ -1,0 +1,9 @@
+# Fly.io config. Long-polling worker: no HTTP services, one always-on machine.
+app = "padel-batumi-bot"
+primary_region = "fra"
+
+[build]
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

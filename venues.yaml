@@ -1,0 +1,50 @@
+# Clubs and courts. Regenerate ids with: uv run python scripts/dump_services.py <subdomain>
+# A court may consist of several Reservio services (e.g. different prices by time of day).
+venues:
+  - key: padel_port
+    name: Padel Port Batumi
+    subdomain: padel-port-batumi2
+    business_id: 1e32bd0a-0d5c-4e30-9788-ea488e713c4d
+    courts:
+      - name: Padel 1
+        group: Padel Courts
+        services:
+          - {id: 6dcc4d1f-c73b-4a35-ad3a-3ede2cb321a6, price: 80}
+      - name: Padel 2
+        group: Padel Courts
+        services:
+          - {id: c36479d3-8201-4d80-9822-e9c08014468b, price: 80}
+      - name: Padel 3
+        group: Padel Courts
+        services:
+          - {id: 303f3adf-8a99-4c1f-89fe-f9a9b56a620b, price: 80}
+      - name: Padel 4
+        group: Padel Courts
+        services:
+          - {id: 1dfea382-0fe9-42de-a3d0-36d82629b071, price: 80}
+      - name: Park 1
+        group: Park Courts
+        services:
+          - {id: 24481fd5-3320-4133-b762-03f13f1b200e, price: 80}
+      - name: Park 2
+        group: Park Courts
+        services:
+          - {id: 09922dde-639d-4bdc-8b53-73077a57cca2, price: 80}
+
+  - key: grand_padel
+    name: Grand Padel Batumi
+    subdomain: grandpadelbatumi
+    business_id: aac3b1f5-7e80-4052-bd09-adc7396cfbec
+    courts:
+      - name: Court A
+        group: Road side
+        services:
+          - {id: adcd4ab2-597c-4173-8090-75595b5ef390, price: 50}  # 08:00-13:00
+          - {id: 8f38cc70-a224-40e6-81d6-b6c7e32d8344, price: 65}  # 13:00-17:00
+          - {id: 77bc9810-6d74-406a-9568-544d0f381924, price: 80}  # 17:00-02:00
+      - name: Court B
+        group: Sea side
+        services:
+          - {id: 972672c5-94ba-4d1a-bdfd-f2839a0ceeb7, price: 50}  # 08:00-13:00
+          - {id: 896c724c-6d75-405c-80ae-87e73e58eec4, price: 65}  # 13:00-17:00
+          - {id: 9813ae70-d196-4426-8b04-480916a8d981, price: 80}  # 17:00-02:00
