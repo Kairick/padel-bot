@@ -24,7 +24,8 @@
   1. `GET https://{subdomain}.reservio.com/booking?step=2&serviceId=...&resourceId=...` создаёт черновой заказ и редиректит на `/order?orderId=...&what=time`.
   2. `POST https://{subdomain}.reservio.com/api/graphql/booking-front`, запрос `bookingFrontByDomain(input:{domain}) { ... on Business { order(orderInput:{orderId}) { items { ... on AppointmentOrderItem { id } } } } }` отдаёт id позиции заказа.
   3. Мутация `setTimeToAppointmentOrderItem(input:{appointmentOrderItemId, businessId, orderId, time})`, где `time` это `start` слота в ISO.
-  4. Ссылка пользователю: `/order?orderId=...&what=checkout`. Страница сама сохраняет orderId в cookie, так что ссылка работает в любом браузере.
+  4. Ссылка пользователю: `/order?orderId=...&what=time`, дальше пользователь нажимает «Continue».
+  - Ссылка сразу на `what=checkout` не годится. Для этого шага сервер не передаёт странице orderId, страница берёт его только из cookie `ORDER_ID`, а из URL записывает в cookie уже после первой отрисовки. Итог: при первом открытии в браузере без cookie для клуба 404, со второго раза работает. Cookie живёт сутки. Для `what=time` сервер orderId передаёт, 404 нет (проверено 2026-09-15).
   - Черновой заказ в состоянии INITIATED слот не держит, он остаётся свободным для других.
   - Если что-то не удалось, бот даёт прежнюю ссылку `/booking?step=2...` на выбор времени.
 - Настройки бизнеса: TZ `Asia/Tbilisi`, `reservationsLaterThan=604800` (бронь максимум на 7 дней вперёд), `reservationsInAdvance=300` (минимум за 5 мин).

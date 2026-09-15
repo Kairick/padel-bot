@@ -56,12 +56,11 @@ TEXTS: dict[str, dict[Lang, str]] = {
     "free_courts": {"ru": "Свободные корты:", "en": "Free courts:"},
     "booking_hint": {
         "ru": (
-            "Кнопка откроет оформление брони на <b>{time}</b>. "
-            "Останется ввести контакты и подтвердить."
+            "Кнопка откроет бронь на <b>{time}</b>. Нажми «Continue», введи контакты и подтверди."
         ),
         "en": (
-            "The button opens checkout for <b>{time}</b>. "
-            "Just enter your contact details and confirm."
+            "The button opens the booking for <b>{time}</b>. "
+            "Tap Continue, enter your contact details and confirm."
         ),
     },
     "other_day": {"ru": "📅 Другой день", "en": "📅 Other day"},

@@ -82,10 +82,15 @@ class ReservioClient:
         resource_id: str | None,
         start: datetime,
     ) -> str:
-        """Create a draft order with court and time preselected, return its checkout link.
+        """Create a draft order with court and time preselected, return a link to it.
 
         Mirrors what the booking page does: /booking?step=2 creates an order, then the
         time is set via GraphQL. A draft order does not hold the slot.
+
+        The link opens the order's time step, where the user taps Continue. Linking straight
+        to `what=checkout` shows a 404 on the first visit: for that step Reservio's server
+        doesn't pass the order id to the page, which then only reads it from a cookie that
+        isn't set yet. The time step gets the id from the server.
         """
         if not resource_id:
             raise ReservioError("checkout link needs a resource id")
@@ -127,7 +132,7 @@ class ReservioClient:
                 raise ReservioError(f"time not set: {item}")
         except (httpx.HTTPError, KeyError, IndexError, TypeError, ValueError) as e:
             raise ReservioError(f"checkout link failed for service {service_id}: {e}") from e
-        return f"{base}/order?orderId={order_id}&what=checkout"
+        return f"{base}/order?orderId={order_id}&what=time"
 
     async def _graphql(self, url: str, query: str, variables: dict[str, Any]) -> dict[str, Any]:
         resp = await self._http.post(

@@ -77,7 +77,8 @@ async def test_create_checkout_url():
     url = await client.create_checkout_url("pp", "b1", "s1", "r1", START)
     await client.aclose()
 
-    assert url == "https://pp.reservio.com/order?orderId=ord-1&what=checkout"
+    # Not what=checkout: Reservio renders a 404 there when the order cookie isn't set yet.
+    assert url == "https://pp.reservio.com/order?orderId=ord-1&what=time"
     params = booking.calls.last.request.url.params
     assert (params["step"], params["serviceId"], params["resourceId"]) == ("2", "s1", "r1")
     set_time = json.loads(gql.calls[1].request.content)["variables"]["input"]

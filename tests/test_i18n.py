@@ -34,5 +34,5 @@ def test_calendar_names_complete():
 
 
 def test_format_placeholder():
-    assert "checkout for <b>18:00</b>." in t("en", "booking_hint", time="18:00")
-    assert "брони на <b>18:00</b>." in t("ru", "booking_hint", time="18:00")
+    assert "booking for <b>18:00</b>." in t("en", "booking_hint", time="18:00")
+    assert "бронь на <b>18:00</b>." in t("ru", "booking_hint", time="18:00")

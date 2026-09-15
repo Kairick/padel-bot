@@ -59,10 +59,11 @@ async def test_render_slot(venues):
     ru = render_slot(venues[0], DAY, slots[0].start, slots, "ru")
     assert "18:00–18:59" in ru
     assert "• Padel 1 · 80 ₾" in ru
-    assert "оформление брони на <b>18:00</b>" in ru
+    assert "бронь на <b>18:00</b>" in ru
+    assert "Continue" in ru
     en = render_slot(venues[0], DAY, slots[0].start, slots, "en")
     assert "Free courts:" in en
-    assert "checkout for <b>18:00</b>" in en
+    assert "booking for <b>18:00</b>" in en
 
 
 @pytest.mark.parametrize(

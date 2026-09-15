@@ -40,7 +40,7 @@ class FakeClient:
         if service_id in self.checkout_failing:
             raise ReservioError("no checkout")
         n = len(self.checkout_calls)
-        return f"https://{subdomain}.reservio.com/order?orderId=o-{service_id}-{n}&what=checkout"
+        return f"https://{subdomain}.reservio.com/order?orderId=o-{service_id}-{n}&what=time"
 
     async def get_slots(self, business_id: str, service_id: str, date_from: date, date_to: date):
         self.calls.append((service_id, date_from, date_to))
