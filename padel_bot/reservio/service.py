@@ -9,7 +9,7 @@ from cachetools import TTLCache
 
 from padel_bot.config import TZ
 from padel_bot.reservio.client import ReservioClient, ReservioError
-from padel_bot.reservio.models import CourtSlot, RawSlot, Venue
+from padel_bot.reservio.models import CourtConfig, CourtSlot, RawSlot, ServiceConfig, Venue
 
 log = logging.getLogger(__name__)
 
@@ -97,17 +97,7 @@ class AvailabilityService:
                 start = raw.start.astimezone(TZ)
                 if start <= now or not time_range.contains(day, start):
                     continue
-                slots.append(
-                    CourtSlot(
-                        venue=venue,
-                        court=court,
-                        service_id=service.id,
-                        resource_id=raw.resource_id,
-                        start=start,
-                        end=raw.end.astimezone(TZ),
-                        price=service.price,
-                    )
-                )
+                slots.append(court_slot(venue, court, service, raw))
 
         slots = _dedupe(slots)
         slots.sort(key=lambda s: (s.start, s.venue.key, s.court.name))
@@ -192,6 +182,18 @@ class AvailabilityService:
         raw = await self._client.get_slots(business_id, service_id, day, day + timedelta(days=1))
         self._cache[key] = raw
         return raw
+
+
+def court_slot(venue: Venue, court: CourtConfig, service: ServiceConfig, raw: RawSlot) -> CourtSlot:
+    return CourtSlot(
+        venue=venue,
+        court=court,
+        service_id=service.id,
+        resource_id=raw.resource_id,
+        start=raw.start.astimezone(TZ),
+        end=raw.end.astimezone(TZ),
+        price=service.price,
+    )
 
 
 def _dedupe(slots: list[CourtSlot]) -> list[CourtSlot]:

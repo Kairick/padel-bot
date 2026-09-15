@@ -106,7 +106,7 @@ padel-bot/
 3. **Сервис доступности**: параллельный опрос всех кортов за диапазон, объединение в таблицу `время → [корты]`, фильтр по часам, кэш в памяти с TTL 60 с (ключ: businessId+serviceId+дата; `cachetools.TTLCache`), дедупликация одновременных одинаковых запросов через общий `asyncio.Task`, обработка ошибок/таймаутов Reservio.
 4. **Бот**: handlers + keyboards + formatting, polling. Проверить руками на реальных данных.
 5. **Docker + деплой** (см. ниже), README с инструкцией запуска.
-6. **Этап 2 (после MVP)**: подписка «сообщи, когда появится слот в пн вечером» (фоновый опрос раз в N минут); автобронирование через мутации `SetServiceAndResourceToAppointmentOrderItem` / `SetTimeToAppointmentOrderItem` (нужен логин на accounts.reservio.com — исследовать отдельно).
+6. **Этап 2 (после MVP)**: мониторинг свободных кортов с уведомлениями, отдельный план в `PLAN_MONITORING.md` (реализован); автобронирование через мутации `SetServiceAndResourceToAppointmentOrderItem` / `SetTimeToAppointmentOrderItem` (нужен логин на accounts.reservio.com — исследовать отдельно).
 
 ## Деплой
 

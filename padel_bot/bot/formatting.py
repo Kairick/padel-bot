@@ -50,6 +50,30 @@ def render_day(availability: Availability, venues: list[Venue], rng: str, lang: 
     return "\n".join(lines)
 
 
+def render_notification(
+    starts: list[tuple[Venue, date, datetime, list[CourtSlot]]],
+    venues: list[Venue],
+    hidden: int,
+    lang: Lang,
+) -> str:
+    """Freed courts grouped by play day and club. `starts` is sorted by play day and time."""
+    lines = [t(lang, "notify_title")]
+    for play_day, day_items in groupby(starts, key=lambda item: item[1]):
+        items = list(day_items)
+        lines += ["", f"<b>{day_title(play_day, lang)}</b>"]
+        for venue in venues:
+            times = [
+                f"{start:%H:%M} ({', '.join(escape(s.court.name) for s in courts)})"
+                for v, _, start, courts in items
+                if v.key == venue.key
+            ]
+            if times:
+                lines.append(f"{escape(venue.name)}: {', '.join(times)}")
+    if hidden:
+        lines += ["", t(lang, "notify_more", count=hidden)]
+    return "\n".join(lines)
+
+
 def render_slot(
     venue: Venue, day: date, start: datetime, slots: list[CourtSlot], lang: Lang
 ) -> str:

@@ -3,7 +3,8 @@ from datetime import date
 import pytest
 
 from padel_bot.bot.formatting import render_day, render_slot
-from padel_bot.bot.keyboards import day_keyboard, days_keyboard, slot_keyboard
+from padel_bot.bot.i18n import t
+from padel_bot.bot.keyboards import WatchDayCb, day_keyboard, days_keyboard, slot_keyboard
 from padel_bot.reservio.service import AvailabilityService
 from tests.conftest import FakeClient, dt, slot
 
@@ -51,6 +52,9 @@ async def test_keyboards_callback_data_fits_telegram_limit(venues, lang):
     slot_buttons = list(markups[0].inline_keyboard[2])
     assert [b.text for b in slot_buttons] == ["18:00 (2)", "00:00 (1)"]
     assert any(b.url and "booking?step=2" in b.url for b in buttons)
+    watch_row = markups[0].inline_keyboard[-2]
+    assert [b.text for b in watch_row] == [t(lang, "watch_btn")]
+    assert watch_row[0].callback_data == WatchDayCb(day="20260915", rng="w").pack()
 
 
 async def test_render_slot(venues):

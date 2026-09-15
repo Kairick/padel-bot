@@ -30,15 +30,24 @@ from padel_bot.stats import Stats, format_summary
 
 log = logging.getLogger(__name__)
 
-# Booking links are Reservio draft orders: anyone who sees the message can open them.
-# So the bot works only in private chats and only with its own messages: a forwarded copy
-# of a bot message in someone else's chat can't be edited and must not create orders.
-router = Router(name="private")
-router.message.filter(F.chat.type == ChatType.PRIVATE)
-router.callback_query.filter(
-    F.message.chat.type == ChatType.PRIVATE,
-    F.message.from_user.is_bot,
-)
+
+def private_router(name: str) -> Router:
+    """Router for private chats and the bot's own messages only.
+
+    Booking links are Reservio draft orders: anyone who sees the message can open them.
+    A forwarded copy of a bot message in someone else's chat can't be edited and must not
+    create orders or touch subscriptions.
+    """
+    r = Router(name=name)
+    r.message.filter(F.chat.type == ChatType.PRIVATE)
+    r.callback_query.filter(
+        F.message.chat.type == ChatType.PRIVATE,
+        F.message.from_user.is_bot,
+    )
+    return r
+
+
+router = private_router("private")
 
 # Included after `router`: group commands, plus every callback the private router rejected
 # (groups, forwarded copies, inaccessible or inline messages), so no tap stays unanswered.
@@ -226,7 +235,7 @@ async def on_slot(
     )
 
 
-@group_router.message(Command("start", "days", "today", "tomorrow", "stats"))
+@group_router.message(Command("start", "days", "today", "tomorrow", "stats", "watch", "subs"))
 async def on_group_command(message: Message, bot: Bot) -> None:
     me = await bot.me()
     link = f"https://t.me/{me.username}"

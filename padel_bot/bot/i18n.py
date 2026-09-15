@@ -93,10 +93,63 @@ TEXTS: dict[str, dict[Lang, str]] = {
         "ru": "Открой бота в личных сообщениях",
         "en": "Open the bot in a private chat",
     },
+    "watch_btn": {"ru": "🔔 Следить", "en": "🔔 Watch"},
+    "watch_start": {
+        "ru": "Выбери день и нажми 🔔 Следить 👇",
+        "en": "Pick a day and tap 🔔 Watch 👇",
+    },
+    "watch_pick_hour": {"ru": "С какого часа следить?", "en": "Which hour should I watch?"},
+    "watch_no_hours": {
+        "ru": "На этот день следить уже поздно.",
+        "en": "It's too late to watch this day.",
+    },
+    "watch_title": {"ru": "🔔 <b>Слежу за кортами</b>", "en": "🔔 <b>Watching for courts</b>"},
+    "watch_any_club": {"ru": "Любой клуб", "en": "Any club"},
+    "watch_courts_1": {"ru": "1 корт", "en": "1 court"},
+    "watch_courts_2": {"ru": "2 корта", "en": "2 courts"},
+    "watch_only_day": {"ru": "📅 Только {day}", "en": "📅 Only {day}"},
+    "watch_delete": {"ru": "🗑 Удалить", "en": "🗑 Delete"},
+    "watch_done": {"ru": "✓ Готово", "en": "✓ Done"},
+    "watch_deleted": {"ru": "Подписка удалена", "en": "Subscription deleted"},
+    "watch_duplicate": {"ru": "Такая подписка уже есть", "en": "You already have this one"},
+    "watch_limit": {
+        "ru": "Можно следить максимум за {limit}. Удали одну, чтобы добавить новую.",
+        "en": "You can watch up to {limit}. Delete one to add a new one.",
+    },
+    "subs_title": {
+        "ru": "🔔 <b>Подписки</b>\nНапишу, когда подходящий корт освободится.",
+        "en": "🔔 <b>Subscriptions</b>\nI'll message you when a matching court is freed.",
+    },
+    "subs_empty": {
+        "ru": (
+            "Подписок пока нет. Выбери день и нажми 🔔 Следить, я напишу, когда корт освободится."
+        ),
+        "en": (
+            "No subscriptions yet. Pick a day and tap 🔔 Watch, "
+            "I'll message you when a court is freed."
+        ),
+    },
+    "subs_new": {"ru": "➕ Новая подписка", "en": "➕ New subscription"},
+    "notify_title": {"ru": "🔔 <b>Освободились корты</b>", "en": "🔔 <b>Courts are free</b>"},
+    "notify_more": {"ru": "и ещё {count}", "en": "and {count} more"},
     "cmd_start": {"ru": "Выбрать день", "en": "Pick a day"},
     "cmd_today": {"ru": "Свободные корты сегодня", "en": "Free courts today"},
     "cmd_tomorrow": {"ru": "Свободные корты завтра", "en": "Free courts tomorrow"},
+    "cmd_watch": {"ru": "Следить за освободившимися кортами", "en": "Watch for freed courts"},
+    "cmd_subs": {"ru": "Мои подписки", "en": "My subscriptions"},
 }
+
+# "Every Monday" as a whole phrase: Russian changes the word by gender.
+WEEKLY: dict[Lang, list[str]] = {
+    "ru": [
+        "Каждый понедельник", "Каждый вторник", "Каждую среду", "Каждый четверг",
+        "Каждую пятницу", "Каждую субботу", "Каждое воскресенье",
+    ],
+    "en": [
+        "Every Monday", "Every Tuesday", "Every Wednesday", "Every Thursday",
+        "Every Friday", "Every Saturday", "Every Sunday",
+    ],
+}  # fmt: skip
 
 
 def detect_lang(language_code: str | None) -> Lang:

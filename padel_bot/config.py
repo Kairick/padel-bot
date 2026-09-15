@@ -4,7 +4,7 @@ from typing import Annotated
 from zoneinfo import ZoneInfo
 
 import yaml
-from pydantic import BaseModel, SecretStr, field_validator
+from pydantic import BaseModel, Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 from padel_bot.reservio.models import Venue
@@ -26,6 +26,10 @@ class Settings(BaseSettings):
     stats_salt: SecretStr | None = None
     # Telegram user ids allowed to use /stats, comma separated in env: ADMIN_IDS=123,456
     admin_ids: Annotated[list[int], NoDecode] = []
+    # Background polling of Reservio for subscriptions to freed courts.
+    monitor_enabled: bool = True
+    # At least a minute: each cycle sends a request per court service to Reservio.
+    monitor_interval_seconds: Annotated[int, Field(ge=60)] = 600
 
     @field_validator("admin_ids", mode="before")
     @classmethod

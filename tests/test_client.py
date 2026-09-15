@@ -6,7 +6,7 @@ import httpx
 import pytest
 import respx
 
-from padel_bot.reservio.client import ReservioClient, ReservioError
+from padel_bot.reservio.client import ReservioClient, ReservioError, parse_retry_after
 
 FIXTURE = json.loads((Path(__file__).parent / "fixtures/booking_slots_padel_port.json").read_text())
 URL = "https://api.reservio.com/v2/businesses/b1/availability/booking-slots"
@@ -109,6 +109,25 @@ async def test_create_checkout_url_fails_without_redirect():
     with pytest.raises(ReservioError):
         await client.create_checkout_url("pp", "b1", "s1", "r1", START)
     await client.aclose()
+
+
+@respx.mock
+async def test_rate_limit_passes_retry_after():
+    respx.get(URL).mock(return_value=httpx.Response(429, headers={"Retry-After": "120"}))
+    client = ReservioClient()
+    with pytest.raises(ReservioError) as e:
+        await client.get_slots("b1", "s1", date(2026, 9, 15), date(2026, 9, 15))
+    await client.aclose()
+    assert e.value.retry_after == 120
+
+
+def test_parse_retry_after():
+    now = datetime.fromisoformat("2026-09-15T10:00:00+00:00")
+    assert parse_retry_after("30") == 30
+    assert parse_retry_after("Tue, 15 Sep 2026 10:01:30 GMT", now=now) == 90
+    assert parse_retry_after("Tue, 15 Sep 2026 09:00:00 GMT", now=now) == 0
+    assert parse_retry_after("soon") is None
+    assert parse_retry_after(None) is None
 
 
 @respx.mock

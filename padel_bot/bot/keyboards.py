@@ -5,7 +5,7 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from padel_bot.bot.formatting import day_button_label, fmt_price, group_by_start
-from padel_bot.bot.i18n import Lang, t
+from padel_bot.bot.i18n import WEEKDAYS_SHORT, Lang, t
 from padel_bot.reservio.models import CourtSlot, Venue
 from padel_bot.reservio.service import WHOLE_DAY, Availability, TimeRange
 
@@ -34,6 +34,28 @@ class SlotCb(CallbackData, prefix="s"):
     rng: str
     v: int  # venue index
     hm: str  # HHMM of slot start
+
+
+class WatchDayCb(CallbackData, prefix="wh"):
+    """Hour grid of a day: the first step of a subscription."""
+
+    day: str
+    rng: str  # range of the day screen, for the Back button
+
+
+class WatchHourCb(CallbackData, prefix="wn"):
+    day: str
+    hour: int  # hour of the play day, 25 means 01:00
+
+
+class WatchCb(CallbackData, prefix="wt"):
+    """Subscription card: open it, toggle a field, delete, done."""
+
+    sid: int
+    action: str
+
+
+WATCH = "watch"
 
 
 def normalize_range(rng: str) -> str:
@@ -111,6 +133,13 @@ def day_keyboard(
 
     rows.append(
         [
+            InlineKeyboardButton(
+                text=t(lang, "watch_btn"), callback_data=WatchDayCb(day=day, rng=rng).pack()
+            )
+        ]
+    )
+    rows.append(
+        [
             InlineKeyboardButton(text=t(lang, "other_day"), callback_data=DAYS),
             InlineKeyboardButton(
                 text=t(lang, "refresh"),
@@ -119,6 +148,27 @@ def day_keyboard(
         ]
     )
     return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def notification_keyboard(
+    starts: list[tuple[Venue, date, datetime]], venues: list[Venue], today: date, lang: Lang
+) -> InlineKeyboardMarkup:
+    """One button per freed time, leading to the usual slot view with booking links."""
+    kb = InlineKeyboardBuilder()
+    for venue, play_day, start in starts:
+        if parse_day(encode_day(play_day), today) is None:
+            continue  # beyond the days the bot shows: the slot view would reject it
+        kb.button(
+            text=f"{WEEKDAYS_SHORT[lang][play_day.weekday()]} {start:%H:%M} · {venue.name}",
+            callback_data=SlotCb(
+                day=encode_day(play_day),
+                rng=DEFAULT_RANGE,
+                v=venues.index(venue),
+                hm=f"{start:%H%M}",
+            ),
+        )
+    kb.adjust(2)
+    return kb.as_markup()
 
 
 def slot_keyboard(

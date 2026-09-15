@@ -15,7 +15,6 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from html import escape
-from pathlib import Path
 from typing import Any
 
 from aiogram import BaseMiddleware
@@ -48,6 +47,8 @@ EVENT_LABELS = {
     "day_view": "смотрели день",
     "refresh": "обновляли",
     "slot_view": "открыли время",
+    "watch_created": "создали подписку",
+    "watch_deleted": "удалили подписку",
 }
 
 
@@ -70,9 +71,8 @@ def local_date(now: datetime | None = None) -> date:
 
 
 class Stats:
-    def __init__(self, path: Path, salt: str | None = None) -> None:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        self._db = sqlite3.connect(path)
+    def __init__(self, db: sqlite3.Connection, salt: str | None = None) -> None:
+        self._db = db
         self._db.executescript(SCHEMA)
         self._salt = salt.encode() if salt else None
         if self._salt is None:
@@ -81,9 +81,6 @@ class Stats:
     @property
     def counts_users(self) -> bool:
         return self._salt is not None
-
-    def close(self) -> None:
-        self._db.close()
 
     def user_hash(self, user_id: int) -> str:
         if self._salt is None:

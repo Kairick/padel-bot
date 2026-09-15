@@ -1,5 +1,6 @@
 import logging
-from datetime import date, datetime
+from datetime import UTC, date, datetime
+from email.utils import parsedate_to_datetime
 from typing import Any
 from urllib.parse import parse_qs, urlsplit
 
@@ -24,7 +25,10 @@ SET_TIME_MUTATION = (
 
 
 class ReservioError(Exception):
-    pass
+    def __init__(self, message: str, retry_after: float | None = None) -> None:
+        super().__init__(message)
+        # Seconds Reservio asked to wait before the next request (HTTP 429), if it said so.
+        self.retry_after = retry_after
 
 
 class ReservioClient:
@@ -62,6 +66,11 @@ class ReservioClient:
                 resp = await self._http.get(
                     f"/v2/businesses/{business_id}/availability/booking-slots", params=params
                 )
+                if resp.status_code == 429:
+                    raise ReservioError(
+                        f"booking-slots rate limited for service {service_id}",
+                        retry_after=parse_retry_after(resp.headers.get("retry-after")),
+                    )
                 resp.raise_for_status()
                 payload = resp.json()
             except (httpx.HTTPError, ValueError) as e:
@@ -145,6 +154,22 @@ class ReservioClient:
         if payload.get("errors") or not payload.get("data"):
             raise ReservioError(f"GraphQL error: {payload.get('errors')}")
         return payload["data"]
+
+
+def parse_retry_after(value: str | None, now: datetime | None = None) -> float | None:
+    """Retry-After header in seconds: either a number of seconds or an HTTP date."""
+    if not value:
+        return None
+    value = value.strip()
+    if value.isdigit():
+        return float(value)
+    try:
+        when = parsedate_to_datetime(value)
+    except TypeError, ValueError:
+        return None
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=UTC)
+    return max(0.0, (when - (now or datetime.now(UTC))).total_seconds())
 
 
 def parse_slot(item: dict) -> RawSlot:
