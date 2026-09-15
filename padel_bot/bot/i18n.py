@@ -70,12 +70,29 @@ TEXTS: dict[str, dict[Lang, str]] = {
     "refreshing": {"ru": "Обновляю…", "en": "Refreshing…"},
     "stale_button": {"ru": "Устаревшая кнопка", "en": "This button is outdated"},
     "slot_taken": {"ru": "Этот слот уже заняли 😕", "en": "This slot is already taken 😕"},
+    "too_many_requests": {
+        "ru": "Слишком часто 🙂 Подожди минуту и попробуй снова.",
+        "en": "Too many taps 🙂 Wait a minute and try again.",
+    },
     "stats_disabled": {
         "ru": (
-            "Статистика выключена. "
-            "Добавь ADMIN_IDS={user_id} в настройки бота и перезапусти его."
+            "Статистика выключена. Добавь ADMIN_IDS={user_id} в настройки бота и перезапусти его."
         ),
         "en": "Stats are disabled. Add ADMIN_IDS={user_id} to the bot settings and restart it.",
+    },
+    "private_only": {
+        "ru": (
+            "Я работаю только в личных сообщениях, чтобы ссылки на бронь не достались другим. "
+            "Напиши мне: {link}"
+        ),
+        "en": (
+            "I only work in private chats, so booking links don't end up with others. "
+            "Message me: {link}"
+        ),
+    },
+    "private_only_short": {
+        "ru": "Открой бота в личных сообщениях",
+        "en": "Open the bot in a private chat",
     },
     "cmd_start": {"ru": "Выбрать день", "en": "Pick a day"},
     "cmd_today": {"ru": "Свободные корты сегодня", "en": "Free courts today"},

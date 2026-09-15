@@ -48,6 +48,24 @@ def decode_day(value: str) -> date:
     return datetime.strptime(value, "%Y%m%d").date()
 
 
+def try_decode_day(value: str) -> date | None:
+    try:
+        return decode_day(value)
+    except ValueError:
+        return None
+
+
+def parse_day(value: str, today: date) -> date | None:
+    """Day from callback data, or None if it is malformed or outside the booking window.
+
+    Callback data comes from the client and can be forged, so it is never trusted as is.
+    """
+    day = try_decode_day(value)
+    if day is None:
+        return None
+    return day if today <= day < today + timedelta(days=BOOKING_WINDOW_DAYS) else None
+
+
 def days_keyboard(today: date, lang: Lang, rng: str = DEFAULT_RANGE) -> InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
     for i in range(BOOKING_WINDOW_DAYS):

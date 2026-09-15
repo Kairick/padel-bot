@@ -22,6 +22,8 @@ class Settings(BaseSettings):
     venues_file: Path = ROOT / "venues.yaml"
     reservio_api_url: str = "https://api.reservio.com"
     stats_db_path: Path = ROOT / "data" / "stats.sqlite3"
+    # Secret key for hashing user ids in stats. Keep it out of the database: openssl rand -hex 32
+    stats_salt: SecretStr | None = None
     # Telegram user ids allowed to use /stats, comma separated in env: ADMIN_IDS=123,456
     admin_ids: Annotated[list[int], NoDecode] = []
 

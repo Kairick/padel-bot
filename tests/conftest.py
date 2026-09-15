@@ -23,7 +23,9 @@ class FakeClient:
         self.data = data
         self.failing = failing or set()
         self.checkout_failing = checkout_failing or set()
+        self.checkout_delay = 0.0
         self.calls: list[tuple[str, date, date]] = []
+        self.checkout_calls: list[str] = []
 
     async def create_checkout_url(
         self,
@@ -33,9 +35,12 @@ class FakeClient:
         resource_id: str | None,
         start: datetime,
     ) -> str:
+        self.checkout_calls.append(service_id)
+        await asyncio.sleep(self.checkout_delay)
         if service_id in self.checkout_failing:
             raise ReservioError("no checkout")
-        return f"https://{subdomain}.reservio.com/order?orderId=o-{service_id}&what=checkout"
+        n = len(self.checkout_calls)
+        return f"https://{subdomain}.reservio.com/order?orderId=o-{service_id}-{n}&what=checkout"
 
     async def get_slots(self, business_id: str, service_id: str, date_from: date, date_to: date):
         self.calls.append((service_id, date_from, date_to))

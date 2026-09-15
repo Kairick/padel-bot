@@ -6,8 +6,9 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.types import BotCommand
 
-from padel_bot.bot.handlers import router
+from padel_bot.bot.handlers import group_router, router
 from padel_bot.bot.i18n import Lang, t
+from padel_bot.bot.throttle import RateLimiter
 from padel_bot.config import get_settings, load_venues
 from padel_bot.reservio.client import ReservioClient
 from padel_bot.reservio.service import AvailabilityService
@@ -33,11 +34,12 @@ async def main() -> None:
         settings.bot_token.get_secret_value(),
         default=DefaultBotProperties(parse_mode=ParseMode.HTML, link_preview_is_disabled=True),
     )
-    stats = Stats(settings.stats_db_path)
+    salt = settings.stats_salt.get_secret_value() if settings.stats_salt else None
+    stats = Stats(settings.stats_db_path, salt)
     dp = Dispatcher()
     dp.message.outer_middleware(StatsMiddleware(stats))
     dp.callback_query.outer_middleware(StatsMiddleware(stats))
-    dp.include_router(router)
+    dp.include_routers(router, group_router)
     try:
         await bot.set_my_commands(commands("en"))
         await bot.set_my_commands(commands("ru"), language_code="ru")
@@ -46,6 +48,9 @@ async def main() -> None:
             availability=availability,
             stats=stats,
             admin_ids=frozenset(settings.admin_ids),
+            # Every slot tap creates Reservio draft orders, every refresh bypasses the cache.
+            slot_limiter=RateLimiter(max_events=20, per_seconds=60),
+            refresh_limiter=RateLimiter(max_events=5, per_seconds=60),
         )
     finally:
         await client.aclose()

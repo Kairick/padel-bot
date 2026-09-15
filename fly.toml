@@ -1,4 +1,6 @@
 # Fly.io config. Long-polling worker: no HTTP services, one always-on machine.
+# Run exactly ONE machine (fly deploy --ha=false, fly scale count 1): two machines polling
+# with the same bot token get TelegramConflictError, and the stats volume attaches to one.
 app = "padel-batumi-bot"
 primary_region = "fra"
 

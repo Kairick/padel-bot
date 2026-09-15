@@ -1,14 +1,15 @@
 """Anonymous usage statistics in SQLite.
 
-Stores only a salted hash of the Telegram user id per day (to count unique users) and
-aggregated action counters that are not linked to users. The salt is generated once and
-kept in the database, so hashes can't be mapped back to ids without the database itself.
+Stores only a keyed hash of the Telegram user id per day (to count unique users) and
+aggregated action counters that are not linked to users. The hash key (STATS_SALT) comes
+from the environment and is never written to the database, so a leaked database file alone
+is not enough to brute-force Telegram ids back from the hashes. Without STATS_SALT unique
+users are not counted at all; action counters still work.
 """
 
 import hashlib
 import hmac
 import logging
-import secrets
 import sqlite3
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
@@ -26,10 +27,6 @@ from padel_bot.config import TZ
 log = logging.getLogger(__name__)
 
 SCHEMA = """
-CREATE TABLE IF NOT EXISTS meta (
-    key TEXT PRIMARY KEY,
-    value TEXT NOT NULL
-);
 CREATE TABLE IF NOT EXISTS daily_users (
     day TEXT NOT NULL,
     user_hash TEXT NOT NULL,
@@ -65,6 +62,7 @@ class Summary:
     top_venues_30d: list[tuple[str, int]]
     top_hours_30d: list[tuple[int, int]]
     langs_30d: dict[str, int]
+    users_counted: bool
 
 
 def local_date(now: datetime | None = None) -> date:
@@ -72,28 +70,29 @@ def local_date(now: datetime | None = None) -> date:
 
 
 class Stats:
-    def __init__(self, path: Path) -> None:
+    def __init__(self, path: Path, salt: str | None = None) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         self._db = sqlite3.connect(path)
         self._db.executescript(SCHEMA)
-        self._salt = self._load_salt()
+        self._salt = salt.encode() if salt else None
+        if self._salt is None:
+            log.error("STATS_SALT is not set: unique users are not counted until it is set")
+
+    @property
+    def counts_users(self) -> bool:
+        return self._salt is not None
 
     def close(self) -> None:
         self._db.close()
 
-    def _load_salt(self) -> bytes:
-        row = self._db.execute("SELECT value FROM meta WHERE key = 'salt'").fetchone()
-        if row:
-            return bytes.fromhex(row[0])
-        salt = secrets.token_bytes(32)
-        with self._db:
-            self._db.execute("INSERT INTO meta (key, value) VALUES ('salt', ?)", (salt.hex(),))
-        return salt
-
     def user_hash(self, user_id: int) -> str:
+        if self._salt is None:
+            raise RuntimeError("STATS_SALT is not set")
         return hmac.new(self._salt, str(user_id).encode(), hashlib.sha256).hexdigest()[:16]
 
     def track_user(self, user_id: int, lang: str, now: datetime | None = None) -> None:
+        if self._salt is None:
+            return
         try:
             with self._db:
                 self._db.execute(
@@ -128,6 +127,7 @@ class Stats:
             return scalar("SELECT COUNT(DISTINCT user_hash) FROM daily_users WHERE day >= ?", day)
 
         return Summary(
+            users_counted=self.counts_users,
             users_today=users_since(today.isoformat()),
             users_7d=users_since(d7),
             users_30d=users_since(d30),
@@ -183,6 +183,8 @@ def format_summary(summary: Summary, venue_names: dict[str, str]) -> str:
         "",
         "<b>Действия за 7 дней</b>",
     ]
+    if not summary.users_counted:
+        lines.insert(3, "⚠️ не задан STATS_SALT, уникальные пользователи не считаются")
     for event, label in EVENT_LABELS.items():
         lines.append(f"{label}: {summary.events_7d.get(event, 0)}")
 
