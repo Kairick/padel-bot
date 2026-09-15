@@ -14,6 +14,7 @@ primary_region = "fra"
   source = "padel_data"
   destination = "/data"
 
+# 256mb is not enough: importing aiogram alone takes ~160MB and the process gets OOM-killed.
 [[vm]]
   size = "shared-cpu-1x"
-  memory = "256mb"
+  memory = "512mb"
