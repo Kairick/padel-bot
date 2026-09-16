@@ -31,11 +31,13 @@ TEXTS: dict[str, dict[Lang, str]] = {
     "welcome": {
         "ru": (
             "Привет! Я показываю свободные корты для падела в Батуми "
-            "(Padel Port и Grand Padel) и даю ссылку на бронь.\n\nВыбери день 👇"
+            "(Padel Port и Grand Padel) и даю ссылку на бронь.\n\n"
+            "Что-то не работает или чего-то не хватает? Напиши /feedback\n\nВыбери день 👇"
         ),
         "en": (
             "Hi! I show free padel courts in Batumi "
-            "(Padel Port and Grand Padel) and give you a booking link.\n\nPick a day 👇"
+            "(Padel Port and Grand Padel) and give you a booking link.\n\n"
+            "Something broken or missing? Send /feedback\n\nPick a day 👇"
         ),
     },
     "pick_day": {"ru": "Выбери день 👇", "en": "Pick a day 👇"},
@@ -132,11 +134,31 @@ TEXTS: dict[str, dict[Lang, str]] = {
     "subs_new": {"ru": "➕ Новая подписка", "en": "➕ New subscription"},
     "notify_title": {"ru": "🔔 <b>Освободились корты</b>", "en": "🔔 <b>Courts are free</b>"},
     "notify_more": {"ru": "и ещё {count}", "en": "and {count} more"},
+    "feedback_prompt": {
+        "ru": (
+            "Напиши одним сообщением, что не работает или чего не хватает. "
+            "Можно приложить скриншот. Я передам разработчику."
+        ),
+        "en": (
+            "Tell me in one message what's broken or missing. "
+            "A screenshot is welcome. I'll pass it to the developer."
+        ),
+    },
+    "feedback_thanks": {"ru": "Спасибо! Передал 🙌", "en": "Thanks! Passed it on 🙌"},
+    "feedback_failed": {
+        "ru": "Не получилось отправить 😕 Попробуй позже.",
+        "en": "Couldn't send it 😕 Please try later.",
+    },
+    "feedback_too_many": {
+        "ru": "Сообщений слишком много 🙂 Попробуй через час.",
+        "en": "Too many messages 🙂 Try again in an hour.",
+    },
     "cmd_start": {"ru": "Выбрать день", "en": "Pick a day"},
     "cmd_today": {"ru": "Свободные корты сегодня", "en": "Free courts today"},
     "cmd_tomorrow": {"ru": "Свободные корты завтра", "en": "Free courts tomorrow"},
     "cmd_watch": {"ru": "Следить за освободившимися кортами", "en": "Watch for freed courts"},
     "cmd_subs": {"ru": "Мои подписки", "en": "My subscriptions"},
+    "cmd_feedback": {"ru": "Написать разработчику", "en": "Message the developer"},
 }
 
 # "Every Monday" as a whole phrase: Russian changes the word by gender.

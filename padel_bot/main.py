@@ -7,6 +7,7 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.types import BotCommand
 
+from padel_bot.bot.feedback import router as feedback_router
 from padel_bot.bot.handlers import group_router, router
 from padel_bot.bot.i18n import Lang, t
 from padel_bot.bot.throttle import RateLimiter
@@ -21,7 +22,7 @@ from padel_bot.stats import Stats, StatsMiddleware
 
 log = logging.getLogger(__name__)
 
-COMMAND_KEYS = ["start", "today", "tomorrow", "watch", "subs"]
+COMMAND_KEYS = ["start", "today", "tomorrow", "watch", "subs", "feedback"]
 
 
 def log_monitor_exit(task: asyncio.Task[None]) -> None:
@@ -54,7 +55,7 @@ async def main() -> None:
     dp = Dispatcher()
     dp.message.outer_middleware(StatsMiddleware(stats))
     dp.callback_query.outer_middleware(StatsMiddleware(stats))
-    dp.include_routers(router, watch_router, group_router)
+    dp.include_routers(router, watch_router, feedback_router, group_router)
     monitor: asyncio.Task[None] | None = None
     try:
         await bot.set_my_commands(commands("en"))
@@ -72,6 +73,7 @@ async def main() -> None:
             # Every slot tap creates Reservio draft orders, every refresh bypasses the cache.
             slot_limiter=RateLimiter(max_events=20, per_seconds=60),
             refresh_limiter=RateLimiter(max_events=5, per_seconds=60),
+            feedback_limiter=RateLimiter(max_events=5, per_seconds=3600),
         )
     finally:
         if monitor is not None:

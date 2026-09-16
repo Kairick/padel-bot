@@ -49,6 +49,7 @@ EVENT_LABELS = {
     "slot_view": "открыли время",
     "watch_created": "создали подписку",
     "watch_deleted": "удалили подписку",
+    "feedback": "написали фидбек",
 }
 
 

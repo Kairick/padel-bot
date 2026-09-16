@@ -235,7 +235,9 @@ async def on_slot(
     )
 
 
-@group_router.message(Command("start", "days", "today", "tomorrow", "stats", "watch", "subs"))
+@group_router.message(
+    Command("start", "days", "today", "tomorrow", "stats", "watch", "subs", "feedback")
+)
 async def on_group_command(message: Message, bot: Bot) -> None:
     me = await bot.me()
     link = f"https://t.me/{me.username}"
