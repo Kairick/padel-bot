@@ -7,7 +7,8 @@ from padel_bot.bot import handlers
 from padel_bot.bot.i18n import t
 from padel_bot.bot.keyboards import SlotCb, encode_day
 from padel_bot.bot.throttle import RateLimiter
-from padel_bot.reservio.service import Availability, current_play_day
+from padel_bot.domain import current_play_day
+from padel_bot.reservio.service import Availability
 
 MESSAGE_DATE = 1_789_000_000
 # What Telegram sends for a message the bot can no longer access: no sender, no text, date 0.

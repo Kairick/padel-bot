@@ -3,18 +3,15 @@
 import asyncio
 import logging
 from dataclasses import dataclass, field
-from datetime import date, datetime, time, timedelta
+from datetime import date, datetime, timedelta
 
 from cachetools import TTLCache
 
-from padel_bot.config import TZ
-from padel_bot.reservio.client import ReservioClient, ReservioError
+from padel_bot.domain import TZ, WHOLE_DAY, TimeRange
+from padel_bot.reservio.client import ReservioClient
 from padel_bot.reservio.models import CourtConfig, CourtSlot, RawSlot, ServiceConfig, Venue
 
 log = logging.getLogger(__name__)
-
-# Clubs are open past midnight; a "play day" D covers [D 06:00, D+1 06:00).
-DAY_START = time(6, 0)
 
 type CacheKey = tuple[str, str, date]
 # (telegram user id, business id, service id, resource id, slot start)
@@ -22,23 +19,6 @@ type LinkKey = tuple[int, str, str, str | None, datetime]
 
 LINK_TTL_SECONDS = 600
 LINKS_TIMEOUT_SECONDS = 10.0
-
-
-@dataclass(frozen=True, slots=True)
-class TimeRange:
-    """Hours of a play day, e.g. 17..30 means 17:00 to 06:00 next day."""
-
-    start_hour: int
-    end_hour: int
-
-    def contains(self, day: date, moment: datetime) -> bool:
-        base = datetime.combine(day, time(0), TZ)
-        start = base + timedelta(hours=self.start_hour)
-        end = base + timedelta(hours=self.end_hour)
-        return start <= moment < end
-
-
-WHOLE_DAY = TimeRange(DAY_START.hour, DAY_START.hour + 24)
 
 
 @dataclass(slots=True)
@@ -99,7 +79,7 @@ class AvailabilityService:
                     continue
                 slots.append(court_slot(venue, court, service, raw))
 
-        slots = _dedupe(slots)
+        slots = dedupe(slots)
         slots.sort(key=lambda s: (s.start, s.venue.key, s.court.name))
         return Availability(day=day, slots=slots, failed_venues=list(failed.values()))
 
@@ -196,7 +176,7 @@ def court_slot(venue: Venue, court: CourtConfig, service: ServiceConfig, raw: Ra
     )
 
 
-def _dedupe(slots: list[CourtSlot]) -> list[CourtSlot]:
+def dedupe(slots: list[CourtSlot]) -> list[CourtSlot]:
     seen: set[tuple[str, str, datetime]] = set()
     unique = []
     for s in slots:
@@ -205,19 +185,3 @@ def _dedupe(slots: list[CourtSlot]) -> list[CourtSlot]:
             seen.add(k)
             unique.append(s)
     return unique
-
-
-__all__ = [
-    "WHOLE_DAY",
-    "Availability",
-    "AvailabilityService",
-    "ReservioError",
-    "TimeRange",
-    "current_play_day",
-]
-
-
-def current_play_day(now: datetime | None = None) -> date:
-    """Play day that is going on right now (before 06:00 it's still the previous day)."""
-    now = (now or datetime.now(TZ)).astimezone(TZ)
-    return (now - timedelta(hours=DAY_START.hour)).date()

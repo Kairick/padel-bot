@@ -1,7 +1,6 @@
 from functools import lru_cache
 from pathlib import Path
 from typing import Annotated
-from zoneinfo import ZoneInfo
 
 import yaml
 from pydantic import BaseModel, Field, SecretStr, field_validator
@@ -10,7 +9,6 @@ from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 from padel_bot.reservio.models import Venue
 
 ROOT = Path(__file__).resolve().parent.parent
-TZ = ZoneInfo("Asia/Tbilisi")
 
 
 class Settings(BaseSettings):

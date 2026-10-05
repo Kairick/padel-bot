@@ -5,8 +5,7 @@ from datetime import date, timedelta
 import pytest
 
 from padel_bot.db import connect
-from padel_bot.monitoring.matcher import CyclePlan, SubscriptionPlan
-from padel_bot.monitoring.models import KnownMatch, ServiceState
+from padel_bot.monitoring.models import CyclePlan, KnownMatch, ServiceState, SubscriptionPlan
 from padel_bot.monitoring.store import (
     MAX_SUBSCRIPTIONS,
     DuplicateSubscriptionError,

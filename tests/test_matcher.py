@@ -2,8 +2,14 @@
 
 from datetime import date, datetime, timedelta
 
-from padel_bot.monitoring.matcher import CyclePlan, SubscriptionPlan, plan_cycle
-from padel_bot.monitoring.models import KnownMatch, ServiceState, Subscription
+from padel_bot.monitoring.matcher import plan_cycle
+from padel_bot.monitoring.models import (
+    CyclePlan,
+    KnownMatch,
+    ServiceState,
+    Subscription,
+    SubscriptionPlan,
+)
 from padel_bot.reservio.client import ReservioError
 from tests.conftest import dt, slot
 

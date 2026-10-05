@@ -1,7 +1,7 @@
 from datetime import date
 
 from padel_bot.bot.keyboards import BOOKING_WINDOW_DAYS, parse_day
-from padel_bot.reservio.service import WHOLE_DAY, TimeRange
+from padel_bot.domain import WHOLE_DAY, TimeRange
 from tests.conftest import dt
 
 TODAY = date(2026, 9, 15)

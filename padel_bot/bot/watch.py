@@ -11,8 +11,7 @@ from aiogram import F
 from aiogram.filters import Command
 from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
 
-from padel_bot.bot.formatting import day_title
-from padel_bot.bot.handlers import (
+from padel_bot.bot.common import (
     answer_quietly,
     build_day_view,
     lang_of,
@@ -20,7 +19,8 @@ from padel_bot.bot.handlers import (
     resolve_day,
     safe_edit,
 )
-from padel_bot.bot.i18n import MONTHS, WEEKDAYS_SHORT, WEEKLY, Lang, t
+from padel_bot.bot.formatting import day_title, render_notification
+from padel_bot.bot.i18n import MONTHS, WEEKDAYS_SHORT, WEEKLY, t
 from padel_bot.bot.keyboards import (
     DEFAULT_RANGE,
     WATCH,
@@ -31,15 +31,17 @@ from padel_bot.bot.keyboards import (
     days_keyboard,
     encode_day,
     normalize_range,
+    notification_keyboard,
     parse_day,
 )
-from padel_bot.config import TZ
+from padel_bot.domain import TZ, Lang, current_play_day
 from padel_bot.monitoring.models import (
     FIRST_HOUR,
     LAST_END_HOUR,
     LAST_HOUR,
     LEAD_TIME,
     MAX_HOURS,
+    FreedTime,
     Subscription,
     nearest_day,
     slot_start,
@@ -51,12 +53,21 @@ from padel_bot.monitoring.store import (
     SubscriptionStore,
 )
 from padel_bot.reservio.models import Venue
-from padel_bot.reservio.service import AvailabilityService, current_play_day
+from padel_bot.reservio.service import AvailabilityService
 from padel_bot.stats import Stats
 
 router = private_router("watch")
 
 TOGGLES = ("kind", "len", "club", "courts")
+
+
+def notification_message(
+    freed: list[FreedTime], venues: list[Venue], hidden: int, today: date, lang: Lang
+) -> tuple[str, InlineKeyboardMarkup]:
+    """Text and buttons of a freed-courts notification; the monitor sends it."""
+    text = render_notification(freed, venues, hidden, lang)
+    starts = [(venue, day, start) for venue, day, start, _ in freed]
+    return text, notification_keyboard(starts, venues, today, lang)
 
 
 def hour_label(hour: int) -> str:

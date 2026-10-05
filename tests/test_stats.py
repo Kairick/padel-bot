@@ -3,8 +3,9 @@ from datetime import datetime
 import pytest
 from pydantic import ValidationError
 
-from padel_bot.config import TZ, Settings
+from padel_bot.config import Settings
 from padel_bot.db import connect
+from padel_bot.domain import TZ
 from padel_bot.stats import Stats, format_summary
 
 NOW = datetime(2026, 9, 20, 12, 0, tzinfo=TZ)

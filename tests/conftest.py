@@ -4,7 +4,7 @@ from decimal import Decimal
 
 import pytest
 
-from padel_bot.config import TZ
+from padel_bot.domain import TZ
 from padel_bot.reservio.client import ReservioError
 from padel_bot.reservio.models import CourtConfig, RawSlot, ServiceConfig, Venue
 

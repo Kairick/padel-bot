@@ -1,6 +1,6 @@
 name: Deploy to Fly.io
 
-# Enable after `fly launch` and adding the FLY_API_TOKEN repository secret.
+# Manual deploy: Actions → Deploy to Fly.io → Run workflow. Needs the FLY_API_TOKEN secret.
 on:
   workflow_dispatch:
 

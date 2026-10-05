@@ -12,8 +12,9 @@ from aiogram.exceptions import (
 )
 
 from padel_bot.bot.keyboards import SlotCb
+from padel_bot.bot.watch import notification_message
 from padel_bot.db import connect
-from padel_bot.monitoring.matcher import CyclePlan
+from padel_bot.monitoring.models import CyclePlan
 from padel_bot.monitoring.poller import CycleOutcome, Poller, next_delay, quiet_seconds
 from padel_bot.monitoring.store import SubscriptionStore
 from padel_bot.reservio.client import ReservioError
@@ -65,6 +66,7 @@ def make_poller(venues, store, bot=None, client=None, clock=None, sleeps=None):
         client or FakeClient({}),
         venues,
         store,
+        render=notification_message,
         clock=clock or Clock(T0),
         sleep=sleep,
     )
@@ -277,6 +279,7 @@ async def test_failed_cycle_does_not_stop_the_loop(venues, store):
         venues,
         store,
         600,
+        render=notification_message,
         jitter_seconds=0,
         clock=Clock(T0),
         sleep=sleep,
@@ -304,6 +307,7 @@ async def test_loop_sleeps_through_the_night(venues, store):
         FakeClient({}),
         venues,
         store,
+        render=notification_message,
         clock=Clock(dt("2026-09-15T03:00:00")),
         sleep=sleep,
     )

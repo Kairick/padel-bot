@@ -20,7 +20,7 @@ from aiogram.filters import Command, CommandObject
 from aiogram.types import Message, ReplyParameters
 from cachetools import TTLCache
 
-from padel_bot.bot.handlers import lang_of, private_router
+from padel_bot.bot.common import lang_of, private_router
 from padel_bot.bot.i18n import t
 from padel_bot.bot.throttle import RateLimiter
 from padel_bot.stats import Stats

@@ -14,43 +14,21 @@ Pure functions: no I/O, no clock. The rule, in short:
 """
 
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 
 from padel_bot.monitoring.models import (
     LEAD_TIME,
+    CyclePlan,
     KnownMatch,
     MatchKey,
     ServiceState,
     Subscription,
+    SubscriptionPlan,
 )
 from padel_bot.reservio.models import CourtSlot, RawSlot, Venue
-from padel_bot.reservio.service import _dedupe, court_slot
+from padel_bot.reservio.service import court_slot, dedupe
 
 FLAP_TIME = timedelta(minutes=30)
-
-
-@dataclass(slots=True)
-class SubscriptionPlan:
-    subscription: Subscription
-    reset_venues: set[str] = field(default_factory=set)  # forget all matches of these clubs
-    insert: list[MatchKey] = field(default_factory=list)  # remember silently
-    set_gone: list[MatchKey] = field(default_factory=list)
-    clear_gone: list[MatchKey] = field(default_factory=list)
-    send: list[MatchKey] = field(default_factory=list)  # written only after a successful send
-
-    def is_empty(self) -> bool:
-        return not (
-            self.reset_venues or self.insert or self.set_gone or self.clear_gone or self.send
-        )
-
-
-@dataclass(slots=True)
-class CyclePlan:
-    ok_venues: set[str]
-    service_states: dict[str, ServiceState]
-    subscriptions: list[SubscriptionPlan]
-    free: dict[MatchKey, list[CourtSlot]]  # free courts per match, for the notification
 
 
 def was_in_window(
@@ -110,7 +88,7 @@ def plan_cycle(
             plan.service_states[service.id] = ServiceState(venue.key, cycle_started_at, horizon)
 
         by_start: dict[datetime, list[CourtSlot]] = {}
-        for slot in sorted(_dedupe(slots), key=lambda s: (s.start, s.court.name)):
+        for slot in sorted(dedupe(slots), key=lambda s: (s.start, s.court.name)):
             by_start.setdefault(slot.start, []).append(slot)
 
         for sub in subscriptions:

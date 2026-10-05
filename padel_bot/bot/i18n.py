@@ -1,12 +1,6 @@
 """Bot texts in Russian and English. Language is picked from the Telegram client language."""
 
-from typing import Literal
-
-type Lang = Literal["ru", "en"]
-
-DEFAULT_LANG: Lang = "en"
-# Telegram language codes whose users most likely read Russian.
-RUSSIAN_CODES = {"ru", "uk", "be", "kk"}
+from padel_bot.domain import Lang
 
 WEEKDAYS_SHORT: dict[Lang, list[str]] = {
     "ru": ["пн", "вт", "ср", "чт", "пт", "сб", "вс"],
@@ -172,12 +166,6 @@ WEEKLY: dict[Lang, list[str]] = {
         "Every Friday", "Every Saturday", "Every Sunday",
     ],
 }  # fmt: skip
-
-
-def detect_lang(language_code: str | None) -> Lang:
-    if not language_code:
-        return DEFAULT_LANG
-    return "ru" if language_code.split("-")[0].lower() in RUSSIAN_CODES else "en"
 
 
 def t(lang: Lang, key: str, **kwargs: object) -> str:

@@ -9,11 +9,11 @@ import sys
 from datetime import date, timedelta
 
 from padel_bot.bot.formatting import render_day
-from padel_bot.bot.i18n import Lang
 from padel_bot.bot.keyboards import RANGES
 from padel_bot.config import ROOT, load_venues
+from padel_bot.domain import Lang, current_play_day
 from padel_bot.reservio.client import ReservioClient
-from padel_bot.reservio.service import AvailabilityService, current_play_day
+from padel_bot.reservio.service import AvailabilityService
 
 
 async def main(day_arg: str, rng: str, lang: Lang) -> None:

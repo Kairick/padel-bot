@@ -1,6 +1,7 @@
 import pytest
 
-from padel_bot.bot.i18n import MONTHS, TEXTS, WEEKDAYS_FULL, WEEKDAYS_SHORT, detect_lang, t
+from padel_bot.bot.i18n import MONTHS, TEXTS, WEEKDAYS_FULL, WEEKDAYS_SHORT, t
+from padel_bot.domain import detect_lang
 
 
 @pytest.mark.parametrize(

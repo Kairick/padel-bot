@@ -1,7 +1,8 @@
 import asyncio
 from datetime import date
 
-from padel_bot.reservio.service import AvailabilityService, TimeRange, current_play_day
+from padel_bot.domain import TimeRange, current_play_day
+from padel_bot.reservio.service import AvailabilityService
 from tests.conftest import FakeClient, dt, slot
 
 DAY = date(2026, 9, 15)

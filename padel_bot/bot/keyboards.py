@@ -5,9 +5,10 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from padel_bot.bot.formatting import day_button_label, fmt_price, group_by_start
-from padel_bot.bot.i18n import WEEKDAYS_SHORT, Lang, t
+from padel_bot.bot.i18n import WEEKDAYS_SHORT, t
+from padel_bot.domain import WHOLE_DAY, Lang, TimeRange
 from padel_bot.reservio.models import CourtSlot, Venue
-from padel_bot.reservio.service import WHOLE_DAY, Availability, TimeRange
+from padel_bot.reservio.service import Availability
 
 BOOKING_WINDOW_DAYS = 7
 NOOP = "noop"

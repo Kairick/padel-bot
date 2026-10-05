@@ -9,11 +9,8 @@ from collections.abc import Collection, Iterable
 from dataclasses import replace
 from datetime import date, datetime
 
-from padel_bot.bot.i18n import Lang
-from padel_bot.config import TZ
-from padel_bot.monitoring.matcher import CyclePlan
-from padel_bot.monitoring.models import KnownMatch, MatchKey, ServiceState, Subscription
-from padel_bot.reservio.service import current_play_day
+from padel_bot.domain import TZ, Lang, current_play_day
+from padel_bot.monitoring.models import CyclePlan, KnownMatch, MatchKey, ServiceState, Subscription
 
 log = logging.getLogger(__name__)
 

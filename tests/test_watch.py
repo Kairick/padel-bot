@@ -8,11 +8,11 @@ from aiogram.types import Message
 from padel_bot.bot import watch
 from padel_bot.bot.i18n import WEEKLY, t
 from padel_bot.bot.keyboards import DayCb, WatchCb, WatchDayCb, WatchHourCb, encode_day
-from padel_bot.config import TZ
 from padel_bot.db import connect
+from padel_bot.domain import TZ, current_play_day
 from padel_bot.monitoring.models import Subscription
 from padel_bot.monitoring.store import MAX_SUBSCRIPTIONS, SubscriptionStore
-from padel_bot.reservio.service import Availability, current_play_day
+from padel_bot.reservio.service import Availability
 from tests.conftest import dt
 
 MON = date(2026, 9, 21)

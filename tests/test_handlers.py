@@ -8,7 +8,8 @@ from padel_bot.bot import handlers
 from padel_bot.bot.i18n import t
 from padel_bot.bot.keyboards import DayCb, SlotCb, encode_day
 from padel_bot.bot.throttle import RateLimiter
-from padel_bot.reservio.service import Availability, current_play_day
+from padel_bot.domain import current_play_day
+from padel_bot.reservio.service import Availability
 
 
 def make_cb(events: list[str]) -> MagicMock:

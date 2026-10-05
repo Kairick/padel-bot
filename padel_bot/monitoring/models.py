@@ -1,9 +1,8 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime, time, timedelta
 
-from padel_bot.bot.i18n import Lang
-from padel_bot.config import TZ
-from padel_bot.reservio.service import TimeRange, current_play_day
+from padel_bot.domain import TZ, Lang, TimeRange, current_play_day
+from padel_bot.reservio.models import CourtSlot, Venue
 
 # Hours of a play day a subscription may start at: 07:00 ... 01:00 (25), ending by 02:00 (26).
 FIRST_HOUR = 7
@@ -14,6 +13,8 @@ MAX_HOURS = 3
 LEAD_TIME = timedelta(minutes=30)
 
 type MatchKey = tuple[str, datetime]  # (venue key, slot start)
+# A time in a notification: club, play day, slot start, free courts at that start.
+type FreedTime = tuple[Venue, date, datetime, list[CourtSlot]]
 
 
 def slot_start(day: date, hour: int) -> datetime:
@@ -71,3 +72,26 @@ class ServiceState:
     venue_key: str
     last_ok_at: datetime  # start of the last cycle in which the whole club answered
     horizon: datetime  # latest slot start this service has ever returned
+
+
+@dataclass(slots=True)
+class SubscriptionPlan:
+    subscription: Subscription
+    reset_venues: set[str] = field(default_factory=set)  # forget all matches of these clubs
+    insert: list[MatchKey] = field(default_factory=list)  # remember silently
+    set_gone: list[MatchKey] = field(default_factory=list)
+    clear_gone: list[MatchKey] = field(default_factory=list)
+    send: list[MatchKey] = field(default_factory=list)  # written only after a successful send
+
+    def is_empty(self) -> bool:
+        return not (
+            self.reset_venues or self.insert or self.set_gone or self.clear_gone or self.send
+        )
+
+
+@dataclass(slots=True)
+class CyclePlan:
+    ok_venues: set[str]
+    service_states: dict[str, ServiceState]
+    subscriptions: list[SubscriptionPlan]
+    free: dict[MatchKey, list[CourtSlot]]  # free courts per match, for the notification

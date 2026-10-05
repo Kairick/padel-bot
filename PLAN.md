@@ -1,5 +1,7 @@
 # Padel Batumi Bot — план
 
+> **Исторический документ.** План реализован; дальше он не обновляется, и детали могут расходиться с кодом: деплой сделан ручным workflow «Deploy to Fly.io» (`workflow_dispatch`), а не по push в `main`; `/week` и `python -m padel_bot.reservio.service --date` не делались, вместо последнего есть `scripts/show_slots.py`. Актуальное описание — `README.md` и карта блоков `docs/blocks/`.
+
 ## Контекст
 
 В Батуми корты для падела бронируются через Reservio: Padel Port Batumi (padel-port-batumi2, две площадки — Padel Courts и Park Courts — в одном аккаунте) и Grand Padel Batumi (grandpadelbatumi).

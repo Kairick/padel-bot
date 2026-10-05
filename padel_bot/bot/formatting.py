@@ -3,7 +3,8 @@ from decimal import Decimal
 from html import escape
 from itertools import groupby
 
-from padel_bot.bot.i18n import MONTHS, WEEKDAYS_FULL, WEEKDAYS_SHORT, Lang, t
+from padel_bot.bot.i18n import MONTHS, WEEKDAYS_FULL, WEEKDAYS_SHORT, t
+from padel_bot.domain import Lang
 from padel_bot.reservio.models import CourtSlot, Venue
 from padel_bot.reservio.service import Availability
 

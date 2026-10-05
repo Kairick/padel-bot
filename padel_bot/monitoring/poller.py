@@ -5,7 +5,7 @@ import logging
 import random
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from datetime import datetime, time, timedelta
+from datetime import date, datetime, time, timedelta
 
 from aiogram import Bot
 from aiogram.exceptions import (
@@ -16,15 +16,12 @@ from aiogram.exceptions import (
 )
 from aiogram.types import InlineKeyboardMarkup
 
-from padel_bot.bot.formatting import render_notification
-from padel_bot.bot.keyboards import notification_keyboard
-from padel_bot.config import TZ
-from padel_bot.monitoring.matcher import CyclePlan, SubscriptionPlan, plan_cycle
-from padel_bot.monitoring.models import MatchKey
+from padel_bot.domain import TZ, Lang, current_play_day
+from padel_bot.monitoring.matcher import plan_cycle
+from padel_bot.monitoring.models import CyclePlan, FreedTime, MatchKey, SubscriptionPlan
 from padel_bot.monitoring.store import SubscriptionStore
 from padel_bot.reservio.client import ReservioClient, ReservioError
 from padel_bot.reservio.models import RawSlot, Venue
-from padel_bot.reservio.service import current_play_day
 
 log = logging.getLogger(__name__)
 
@@ -39,6 +36,11 @@ QUIET_UNTIL = time(7, 50)
 MAX_TIMES_PER_MESSAGE = 20
 # Errors after which the chat can't receive messages anymore.
 GONE_CHAT_ERRORS = ("chat not found", "user is deactivated", "bot was blocked")
+
+# Texts and buttons belong to the bot: (freed times, venues, hidden count, today, lang).
+type NotificationRenderer = Callable[
+    [list[FreedTime], list[Venue], int, date, Lang], tuple[str, InlineKeyboardMarkup]
+]
 
 
 def quiet_seconds(now: datetime) -> float:
@@ -76,6 +78,7 @@ class Poller:
         store: SubscriptionStore,
         interval_seconds: float = 600,
         *,
+        render: NotificationRenderer,
         jitter_seconds: float = JITTER_SECONDS,
         clock: Callable[[], datetime] = lambda: datetime.now(TZ),
         sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
@@ -84,6 +87,7 @@ class Poller:
         self._client = client
         self._venues = venues
         self._store = store
+        self._render = render
         self._interval = interval_seconds
         self._jitter = jitter_seconds
         self._clock = clock
@@ -187,7 +191,7 @@ class Poller:
         return notified
 
     def render(
-        self, keys: set[MatchKey], plan: CyclePlan, lang
+        self, keys: set[MatchKey], plan: CyclePlan, lang: Lang
     ) -> tuple[str, InlineKeyboardMarkup]:
         order = {v.key: i for i, v in enumerate(self._venues)}
         venue_by_key = {v.key: v for v in self._venues}
@@ -195,20 +199,14 @@ class Poller:
             keys, key=lambda k: (current_play_day(k[1]), k[1], order.get(k[0], len(order)))
         )
         shown = ordered[:MAX_TIMES_PER_MESSAGE]
-        starts = [
+        starts: list[FreedTime] = [
             (venue_by_key[venue_key], current_play_day(start), start, plan.free[(venue_key, start)])
             for venue_key, start in shown
         ]
         # The text is grouped by day and club, buttons follow the same order.
         starts.sort(key=lambda item: (item[1], order[item[0].key], item[2]))
-        text = render_notification(starts, self._venues, len(ordered) - len(shown), lang)
-        markup = notification_keyboard(
-            [(venue, day, start) for venue, day, start, _ in starts],
-            self._venues,
-            current_play_day(self._clock()),
-            lang,
-        )
-        return text, markup
+        hidden = len(ordered) - len(shown)
+        return self._render(starts, self._venues, hidden, current_play_day(self._clock()), lang)
 
     async def _send(self, chat_id: int, text: str, markup: InlineKeyboardMarkup) -> bool:
         for attempt in range(2):

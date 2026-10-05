@@ -20,8 +20,7 @@ from typing import Any
 from aiogram import BaseMiddleware
 from aiogram.types import TelegramObject
 
-from padel_bot.bot.i18n import detect_lang
-from padel_bot.config import TZ
+from padel_bot.domain import TZ, detect_lang
 
 log = logging.getLogger(__name__)
 
