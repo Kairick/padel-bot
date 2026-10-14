@@ -27,7 +27,7 @@ from padel_bot.stats import Stats
 
 log = logging.getLogger(__name__)
 
-router = private_router("feedback")
+feedback_router = private_router("feedback")
 
 # Other commands don't cancel the wait, so a forgotten /feedback must not swallow
 # a message typed much later.
@@ -125,7 +125,7 @@ async def submit(
     await message.answer(t(lang, "feedback_thanks"))
 
 
-@router.message(Command("feedback"))
+@feedback_router.message(Command("feedback"))
 async def cmd_feedback(
     message: Message,
     command: CommandObject,
@@ -149,7 +149,7 @@ async def cmd_feedback(
     await message.answer(t(lang_of(user), "feedback_prompt"))
 
 
-@router.message(NOT_COMMAND)
+@feedback_router.message(NOT_COMMAND)
 async def on_message(
     message: Message,
     bot: Bot,

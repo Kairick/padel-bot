@@ -6,7 +6,7 @@ from aiogram import Router
 from aiogram.exceptions import TelegramForbiddenError
 from aiogram.filters import Command
 
-from padel_bot.bot import feedback, handlers, watch
+from padel_bot.bot import browse, feedback, watch
 from padel_bot.main import (
     COMMAND_KEYS,
     HIDDEN_COMMANDS,
@@ -36,22 +36,24 @@ def test_menu_commands_have_texts_in_both_languages():
 
 
 def test_every_private_command_is_in_the_menu_or_deliberately_hidden():
-    private = set().union(*(handled_commands(r) for r in (handlers.router, watch.router)))
-    private |= handled_commands(feedback.router)
+    private = set().union(
+        *(handled_commands(r) for r in (browse.browse_router, watch.watch_router))
+    )
+    private |= handled_commands(feedback.feedback_router)
     assert private == set(COMMAND_KEYS) | set(HIDDEN_COMMANDS)
 
 
 def test_group_points_every_user_command_to_private_chat_but_not_stats():
-    assert handled_commands(handlers.group_router) == set(COMMAND_KEYS) | {"days"}
+    assert handled_commands(browse.group_router) == set(COMMAND_KEYS) | {"days"}
 
 
 def test_fallback_router_is_included_last():
     dp = build_dispatcher(MagicMock())
     assert dp.sub_routers == [
-        handlers.router,
-        watch.router,
-        feedback.router,
-        handlers.group_router,
+        browse.browse_router,
+        watch.watch_router,
+        feedback.feedback_router,
+        browse.group_router,
     ]
     # A router can belong to one dispatcher only; free them for the next test.
     for r in dp.sub_routers:

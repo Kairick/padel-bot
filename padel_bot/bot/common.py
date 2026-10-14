@@ -31,16 +31,17 @@ def private_router(name: str) -> Router:
     A forwarded copy of a bot message in someone else's chat can't be edited and must not
     create orders or touch subscriptions.
     """
-    r = Router(name=name)
-    r.message.filter(F.chat.type == ChatType.PRIVATE)
-    r.callback_query.filter(
+    router = Router(name=name)
+    router.message.filter(F.chat.type == ChatType.PRIVATE)
+    router.callback_query.filter(
         F.message.chat.type == ChatType.PRIVATE,
         F.message.from_user.is_bot,
     )
-    return r
+    return router
 
 
 def lang_of(user: User | None) -> Lang:
+    """Get the language code of the user."""
     return detect_lang(user.language_code if user else None)
 
 
@@ -66,6 +67,7 @@ async def build_day_view(
 
 
 async def safe_edit(message: Message, text: str, markup: InlineKeyboardMarkup) -> None:
+    """Safely edit a message."""
     try:
         await message.edit_text(text, reply_markup=markup)
     except TelegramBadRequest as e:

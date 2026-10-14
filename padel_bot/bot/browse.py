@@ -32,7 +32,7 @@ from padel_bot.domain import current_play_day
 from padel_bot.reservio.service import AvailabilityService
 from padel_bot.stats import Stats, format_summary
 
-router = private_router("private")
+browse_router = private_router("private")
 
 # Included after `router`: group commands, plus every callback the private router rejected
 # (groups, forwarded copies, inaccessible or inline messages), so no tap stays unanswered.
@@ -40,15 +40,15 @@ group_router = Router(name="fallback")
 group_router.message.filter(F.chat.type != ChatType.PRIVATE)
 
 
-@router.message(CommandStart())
-@router.message(Command("days"))
+@browse_router.message(CommandStart())
+@browse_router.message(Command("days"))
 async def cmd_start(message: Message, stats: Stats) -> None:
     lang = lang_of(message.from_user)
     stats.track_event("start")
     await message.answer(t(lang, "welcome"), reply_markup=days_keyboard(current_play_day(), lang))
 
 
-@router.message(Command("stats"))
+@browse_router.message(Command("stats"))
 async def cmd_stats(
     message: Message,
     stats: Stats,
@@ -67,7 +67,7 @@ async def cmd_stats(
     await message.answer(format_summary(stats.summary(), venue_names))
 
 
-@router.message(Command("today"))
+@browse_router.message(Command("today"))
 async def cmd_today(message: Message, availability: AvailabilityService, stats: Stats) -> None:
     lang = lang_of(message.from_user)
     stats.track_event("day_view")
@@ -75,7 +75,7 @@ async def cmd_today(message: Message, availability: AvailabilityService, stats: 
     await message.answer(text, reply_markup=markup)
 
 
-@router.message(Command("tomorrow"))
+@browse_router.message(Command("tomorrow"))
 async def cmd_tomorrow(message: Message, availability: AvailabilityService, stats: Stats) -> None:
     lang = lang_of(message.from_user)
     stats.track_event("day_view")
@@ -84,12 +84,12 @@ async def cmd_tomorrow(message: Message, availability: AvailabilityService, stat
     await message.answer(text, reply_markup=markup)
 
 
-@router.callback_query(F.data == NOOP)
+@browse_router.callback_query(F.data == NOOP)
 async def on_noop(cb: CallbackQuery) -> None:
     await answer_quietly(cb)
 
 
-@router.callback_query(F.data == DAYS)
+@browse_router.callback_query(F.data == DAYS)
 async def on_days(cb: CallbackQuery) -> None:
     await answer_quietly(cb)
     lang = lang_of(cb.from_user)
@@ -97,7 +97,7 @@ async def on_days(cb: CallbackQuery) -> None:
         await safe_edit(cb.message, t(lang, "pick_day"), days_keyboard(current_play_day(), lang))
 
 
-@router.callback_query(DayCb.filter())
+@browse_router.callback_query(DayCb.filter())
 async def on_day(
     cb: CallbackQuery,
     callback_data: DayCb,
@@ -122,7 +122,7 @@ async def on_day(
     await safe_edit(cb.message, text, markup)
 
 
-@router.callback_query(SlotCb.filter())
+@browse_router.callback_query(SlotCb.filter())
 async def on_slot(
     cb: CallbackQuery,
     callback_data: SlotCb,

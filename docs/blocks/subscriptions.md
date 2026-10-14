@@ -4,7 +4,9 @@
 **Code:** `padel_bot/monitoring/models.py`, `padel_bot/monitoring/store.py`
 
 ## Interface
-- Model: `Subscription` (`applies_to`, `matches`, `watches_venue`, `time_range`), `KnownMatch`, `ServiceState`, `MatchKey`; constants `FIRST_HOUR`, `LAST_HOUR`, `LAST_END_HOUR`, `MAX_HOURS`, `LEAD_TIME`; `slot_start`, `nearest_day`.
+- Model: `Subscription` (`applies_to`, `matches`, `watches_venue`, `time_range`), `KnownMatch`, `ServiceState`, `MatchKey`.
+- Cycle types shared with the monitor: `SubscriptionPlan`, `CyclePlan`, `FreedTime` (a time in a notification).
+- Constants `FIRST_HOUR`, `LAST_HOUR`, `LAST_END_HOUR`, `MAX_HOURS`, `LEAD_TIME`; `slot_start`, `nearest_day`.
 - `SubscriptionStore` CRUD: `create` (limit 5, unique), `update`, `get`, `list_for_chat`, `delete`, `delete_chat`, `set_lang`, `count_for_chat`.
 - Polling side: `all`, `has_subscriptions`, `known_matches`, `poll_state`, `apply_cycle(plan, now)`, `mark_notified`, `is_unchanged`, `cleanup`.
 - Errors: `SubscriptionLimitError`, `DuplicateSubscriptionError(existing_id)`.
@@ -15,9 +17,8 @@
 
 ## Depends on
 - SQLite connection from `padel_bot/db.py` (shared with [stats](stats.md)).
-- [monitor](monitor.md) — `CyclePlan` type consumed by `apply_cycle` (type-level coupling back to the monitor).
-- [availability](availability.md) — `current_play_day`, `TimeRange`.
-- Shared `padel_bot/bot/i18n.py` — `Lang` type.
+- Shared `padel_bot/domain.py` — `TZ`, `Lang`, `TimeRange`, `current_play_day`.
+- Shared `padel_bot/reservio/models.py` — `CourtSlot`, `Venue` (in the cycle types).
 
 ## Config
 - `STATS_DB_PATH` — SQLite file (default `data/stats.sqlite3`; `/data/stats.sqlite3` on Fly).

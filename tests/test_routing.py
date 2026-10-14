@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 from aiogram.types import CallbackQuery, Message
 
-from padel_bot.bot import handlers
+from padel_bot.bot import browse
 from padel_bot.bot.i18n import t
 from padel_bot.bot.keyboards import SlotCb, encode_day
 from padel_bot.bot.throttle import RateLimiter
@@ -56,7 +56,7 @@ async def passes(observer, event) -> bool:
 
 
 async def test_private_router_takes_only_own_messages_in_private_chats():
-    private = handlers.router.callback_query
+    private = browse.browse_router.callback_query
     assert await passes(private, callback(message("private", from_bot=True)))
     assert not await passes(private, callback(message("private", from_bot=False)))  # forwarded
     assert not await passes(private, callback(message("group", from_bot=True)))
@@ -65,7 +65,7 @@ async def test_private_router_takes_only_own_messages_in_private_chats():
 
 
 async def test_fallback_router_catches_every_rejected_callback():
-    fallback = handlers.group_router.callback_query
+    fallback = browse.group_router.callback_query
     for cb in (
         callback(message("private", from_bot=False)),
         callback(message("group", from_bot=True)),
@@ -85,7 +85,7 @@ async def test_foreign_callback_answers():
         cb = MagicMock(from_user=MagicMock(language_code="ru"), message=msg)
         cb.answer = AsyncMock()
 
-        await handlers.on_foreign_callback(cb)
+        await browse.on_foreign_callback(cb)
 
         cb.answer.assert_awaited_once_with(t("ru", key), show_alert=True)
 
@@ -102,7 +102,7 @@ async def test_on_slot_reports_failed_venue_instead_of_taken_slot(venues):
     )
     data = SlotCb(day=encode_day(day), rng="w", v=0, hm="1800")
 
-    await handlers.on_slot(cb, data, availability, MagicMock(), RateLimiter(10, 60))
+    await browse.on_slot(cb, data, availability, MagicMock(), RateLimiter(10, 60))
 
     text = cb.message.edit_text.await_args.args[0]
     assert text.startswith(f"⚠️ {venues[0].name}: {t('ru', 'venue_failed')}")

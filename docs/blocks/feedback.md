@@ -15,7 +15,7 @@
 
 ## Depends on
 - Telegram Bot API — `forward_message`, `send_message`.
-- [browse](browse.md) — `private_router`, `lang_of`.
+- Shared `padel_bot/bot/common.py` — `private_router`, `lang_of`.
 - [stats](stats.md) — `track_event("feedback")`.
 - Shared `padel_bot/bot/throttle.py` — `feedback_limiter` (5/hour), injected by `main.py`.
 

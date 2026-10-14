@@ -56,7 +56,7 @@ from padel_bot.reservio.models import Venue
 from padel_bot.reservio.service import AvailabilityService
 from padel_bot.stats import Stats
 
-router = private_router("watch")
+watch_router = private_router("watch")
 
 TOGGLES = ("kind", "len", "club", "courts")
 
@@ -213,7 +213,7 @@ def subs_view(
 # Handlers
 
 
-@router.message(Command("watch"))
+@watch_router.message(Command("watch"))
 async def cmd_watch(message: Message) -> None:
     lang = lang_of(message.from_user)
     await message.answer(
@@ -221,7 +221,7 @@ async def cmd_watch(message: Message) -> None:
     )
 
 
-@router.message(Command("subs"))
+@watch_router.message(Command("subs"))
 async def cmd_subs(
     message: Message, subscriptions: SubscriptionStore, availability: AvailabilityService
 ) -> None:
@@ -232,7 +232,7 @@ async def cmd_subs(
     await message.answer(text, reply_markup=markup)
 
 
-@router.callback_query(F.data == WATCH)
+@watch_router.callback_query(F.data == WATCH)
 async def on_watch_start(cb: CallbackQuery) -> None:
     await answer_quietly(cb)
     lang = lang_of(cb.from_user)
@@ -240,7 +240,7 @@ async def on_watch_start(cb: CallbackQuery) -> None:
         await safe_edit(cb.message, t(lang, "watch_start"), days_keyboard(current_play_day(), lang))
 
 
-@router.callback_query(WatchDayCb.filter())
+@watch_router.callback_query(WatchDayCb.filter())
 async def on_watch_day(cb: CallbackQuery, callback_data: WatchDayCb) -> None:
     lang = lang_of(cb.from_user)
     if not isinstance(cb.message, Message):
@@ -254,7 +254,7 @@ async def on_watch_day(cb: CallbackQuery, callback_data: WatchDayCb) -> None:
     await safe_edit(cb.message, text, markup)
 
 
-@router.callback_query(WatchHourCb.filter())
+@watch_router.callback_query(WatchHourCb.filter())
 async def on_watch_hour(
     cb: CallbackQuery,
     callback_data: WatchHourCb,
@@ -303,7 +303,7 @@ async def on_watch_hour(
     await safe_edit(cb.message, text, markup)
 
 
-@router.callback_query(WatchCb.filter())
+@watch_router.callback_query(WatchCb.filter())
 async def on_watch_card(
     cb: CallbackQuery,
     callback_data: WatchCb,

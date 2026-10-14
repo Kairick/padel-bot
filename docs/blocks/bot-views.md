@@ -14,8 +14,8 @@
 - Persistent / in-memory: nothing.
 
 ## Depends on
-- [availability](availability.md) — `Availability`, `TimeRange`, `WHOLE_DAY` (types and range constants).
-- Shared `padel_bot/bot/i18n.py` (texts), `padel_bot/reservio/models.py` (types).
+- [availability](availability.md) — `Availability` type.
+- Shared `padel_bot/domain.py` (`TimeRange`, `WHOLE_DAY`, `Lang`), `padel_bot/bot/i18n.py` (texts), `padel_bot/reservio/models.py` (types).
 
 ## Config
 - none
@@ -24,5 +24,5 @@
 - `tests/test_bot_views.py` — rendering ru/en, callback-data size limit, range button labels, day labels; notification rendering is covered in `tests/test_poller.py`.
 
 ## Notes
-- Used by three blocks: [browse](browse.md), [watch-ui](watch-ui.md), [monitor](monitor.md). The monitor importing these is what makes `bot <-> monitoring` a package-level cycle.
+- Used by [browse](browse.md), [watch-ui](watch-ui.md) and `bot/common.py`. The monitor reaches the notification views only through the injected `watch.notification_message`.
 - `parse_day` treats callback data as untrusted (it can be forged).

@@ -15,7 +15,7 @@
 
 ## Depends on
 - SQLite connection from `padel_bot/db.py` (shared with [subscriptions](subscriptions.md)).
-- Shared `padel_bot/bot/i18n.py` — `detect_lang`.
+- Shared `padel_bot/domain.py` — `detect_lang`, `TZ`.
 
 ## Config
 - `STATS_SALT` — HMAC key, never stored; without it unique users are not counted (error logged, `/stats` warns). Must not change after launch.

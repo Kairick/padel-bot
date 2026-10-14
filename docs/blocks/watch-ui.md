@@ -6,6 +6,7 @@
 ## Interface
 - Commands: `/watch` (day picker with a hint), `/subs` (list of the chat's subscriptions).
 - Callbacks: `WATCH` (start), `WatchDayCb` (hour grid), `WatchHourCb` (create subscription, open card), `WatchCb` actions `open`, `del`, `done`, `kind`, `len`, `club`, `courts`.
+- `notification_message(freed, venues, hidden, today, lang)` — text + keyboard of a freed-courts notification; `main.py` hands it to the [monitor](monitor.md).
 - Pure helpers: `watch_hours`, `toggle_kind`, `toggle_length`, `toggle_club`, `toggle_courts`, `hours_view`, `card_view`, `subs_view`.
 
 ## Owns
@@ -14,16 +15,16 @@
 
 ## Depends on
 - [subscriptions](subscriptions.md) — CRUD, limits (`MAX_SUBSCRIPTIONS`), errors, `Subscription` model and hour constants.
-- [browse](browse.md) — `private_router`, `resolve_day`, `build_day_view`, `safe_edit`, `answer_quietly`, `lang_of`.
-- [bot-views](bot-views.md) — callback data, `days_keyboard`, `day_title`.
-- [availability](availability.md) — venue list, `current_play_day`.
+- [bot-views](bot-views.md) — callback data, `days_keyboard`, `day_title`, `render_notification`, `notification_keyboard`.
+- [availability](availability.md) — venue list, day view.
+- Shared `padel_bot/bot/common.py` — `private_router`, `resolve_day`, `build_day_view`, `safe_edit`, `answer_quietly`, `lang_of`; `padel_bot/domain.py`.
 - [stats](stats.md) — `watch_created`, `watch_deleted`, `day_view` events.
 
 ## Config
 - none
 
 ## Tests
-- `tests/test_watch.py` — toggles, card/hour/subs views, callback-data size, create-once, limit screen, owner check, delete, done, `/subs`.
+- `tests/test_watch.py` — toggles, card/hour/subs views, callback-data size, create-once, limit screen, owner check, delete, done, `/subs`; notification rendering in `tests/test_poller.py`.
 
 ## Notes
 - Card actions check `sub.chat_id == chat_id`: a forwarded or foreign card is "stale".

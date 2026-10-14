@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, MagicMock
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import Message
 
-from padel_bot.bot import handlers
+from padel_bot.bot import browse
 from padel_bot.bot.i18n import t
 from padel_bot.bot.keyboards import DayCb, SlotCb, encode_day
 from padel_bot.bot.throttle import RateLimiter
@@ -45,7 +45,7 @@ async def test_on_slot_answers_before_calling_reservio(venues):
     cb = make_cb(events)
     availability = make_availability(venues, events)
 
-    await handlers.on_slot(cb, slot_cb(today()), availability, MagicMock(), RateLimiter(10, 60))
+    await browse.on_slot(cb, slot_cb(today()), availability, MagicMock(), RateLimiter(10, 60))
 
     assert events[:2] == ["answer", "fetch"]
     text = cb.message.edit_text.await_args.args[0]
@@ -58,7 +58,7 @@ async def test_on_slot_garbage_day_gets_alert(venues):
         cb = make_cb(events)
         availability = make_availability(venues, events)
 
-        await handlers.on_slot(cb, slot_cb(day), availability, MagicMock(), RateLimiter(10, 60))
+        await browse.on_slot(cb, slot_cb(day), availability, MagicMock(), RateLimiter(10, 60))
 
         cb.answer.assert_awaited_once_with(t("ru", "stale_button"), show_alert=True)
         cb.message.edit_text.assert_not_awaited()
@@ -72,8 +72,8 @@ async def test_outdated_day_reopens_day_picker(venues):
         cb = make_cb(events)
         availability = make_availability(venues, events)
 
-        await handlers.on_slot(cb, slot_cb(day), availability, MagicMock(), RateLimiter(10, 60))
-        await handlers.on_day(
+        await browse.on_slot(cb, slot_cb(day), availability, MagicMock(), RateLimiter(10, 60))
+        await browse.on_day(
             cb, DayCb(day=day, rng="w"), availability, MagicMock(), RateLimiter(10, 60)
         )
 
@@ -89,9 +89,7 @@ async def test_on_slot_rejects_unknown_venue(venues):
     cb = make_cb(events)
     availability = make_availability(venues, events)
 
-    await handlers.on_slot(
-        cb, slot_cb(today(), v=99), availability, MagicMock(), RateLimiter(10, 60)
-    )
+    await browse.on_slot(cb, slot_cb(today(), v=99), availability, MagicMock(), RateLimiter(10, 60))
 
     cb.answer.assert_awaited_once_with(t("ru", "stale_button"), show_alert=True)
     availability.get_availability.assert_not_awaited()
@@ -102,7 +100,7 @@ async def test_on_slot_rate_limited(venues):
     cb = make_cb(events)
     availability = make_availability(venues, events)
 
-    await handlers.on_slot(cb, slot_cb(today()), availability, MagicMock(), RateLimiter(0, 60))
+    await browse.on_slot(cb, slot_cb(today()), availability, MagicMock(), RateLimiter(0, 60))
 
     cb.answer.assert_awaited_once_with(t("ru", "too_many_requests"), show_alert=True)
     availability.get_availability.assert_not_awaited()
@@ -115,7 +113,7 @@ async def test_on_day_refresh_rate_limited(venues):
     availability = make_availability(venues, events)
     data = DayCb(day=today(), rng="w", refresh=True)
 
-    await handlers.on_day(cb, data, availability, MagicMock(), RateLimiter(0, 60))
+    await browse.on_day(cb, data, availability, MagicMock(), RateLimiter(0, 60))
 
     cb.answer.assert_awaited_once_with(t("ru", "too_many_requests"), show_alert=True)
     availability.get_availability.assert_not_awaited()
@@ -126,7 +124,7 @@ async def test_on_day_plain_view_is_not_rate_limited(venues):
     cb = make_cb(events)
     availability = make_availability(venues, events)
 
-    await handlers.on_day(
+    await browse.on_day(
         cb, DayCb(day=today(), rng="w"), availability, MagicMock(), RateLimiter(0, 60)
     )
 
@@ -140,7 +138,7 @@ async def test_stale_callback_answer_does_not_stop_the_update(venues):
     cb.answer.side_effect = TelegramBadRequest(method=MagicMock(), message="query is too old")
     availability = make_availability(venues, events)
 
-    await handlers.on_day(
+    await browse.on_day(
         cb, DayCb(day=today(), rng="w"), availability, MagicMock(), RateLimiter(10, 60)
     )
 
@@ -168,11 +166,11 @@ async def passes(observer, event) -> bool:
 
 
 async def test_main_router_works_only_in_private_chats():
-    assert await passes(handlers.router.message, make_message("private"))
+    assert await passes(browse.browse_router.message, make_message("private"))
     for chat_type in ("group", "supergroup", "channel"):
-        assert not await passes(handlers.router.message, make_message(chat_type))
-        assert await passes(handlers.group_router.message, make_message(chat_type))
-    assert not await passes(handlers.group_router.message, make_message("private"))
+        assert not await passes(browse.browse_router.message, make_message(chat_type))
+        assert await passes(browse.group_router.message, make_message(chat_type))
+    assert not await passes(browse.group_router.message, make_message("private"))
 
 
 async def test_group_command_points_to_private_chat():
@@ -181,7 +179,7 @@ async def test_group_command_points_to_private_chat():
     bot = MagicMock()
     bot.me = AsyncMock(return_value=MagicMock(username="batumipadel_bot"))
 
-    await handlers.on_group_command(message, bot)
+    await browse.on_group_command(message, bot)
 
     text = message.answer.await_args.args[0]
     assert "https://t.me/batumipadel_bot" in text
