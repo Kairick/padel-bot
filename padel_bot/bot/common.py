@@ -75,16 +75,21 @@ async def safe_edit(message: Message, text: str, markup: InlineKeyboardMarkup) -
             raise
 
 
-async def resolve_day(cb: CallbackQuery, message: Message, value: str, lang: Lang) -> date | None:
-    """Day from callback data if it can be shown; otherwise handle the tap and return None.
+async def resolve_day(cb: CallbackQuery, value: str, lang: Lang) -> tuple[Message, date] | None:
+    """Message and day of a day button if it can be shown; otherwise handle the tap, return None.
 
-    A well-formed day outside the booking window (typically yesterday's message after
-    06:00) reopens the day picker, so the message stays usable. Garbage gets an alert.
+    An inaccessible message or garbage gets an alert. A well-formed day outside the booking
+    window (typically yesterday's message after 06:00) reopens the day picker, so the
+    message stays usable.
     """
+    message = cb.message
+    if not isinstance(message, Message):
+        await answer_quietly(cb, t(lang, "stale_button"), show_alert=True)
+        return None
     today = current_play_day()
     day = parse_day(value, today)
     if day is not None:
-        return day
+        return message, day
     if try_decode_day(value) is None:
         await answer_quietly(cb, t(lang, "stale_button"), show_alert=True)
     else:

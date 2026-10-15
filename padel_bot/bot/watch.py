@@ -243,15 +243,12 @@ async def on_watch_start(cb: CallbackQuery) -> None:
 @watch_router.callback_query(WatchDayCb.filter())
 async def on_watch_day(cb: CallbackQuery, callback_data: WatchDayCb) -> None:
     lang = lang_of(cb.from_user)
-    if not isinstance(cb.message, Message):
-        await answer_quietly(cb, t(lang, "stale_button"), show_alert=True)
+    if (resolved := await resolve_day(cb, callback_data.day, lang)) is None:
         return
-    day = await resolve_day(cb, cb.message, callback_data.day, lang)
-    if day is None:
-        return
+    message, day = resolved
     await answer_quietly(cb)
     text, markup = hours_view(day, callback_data.rng, lang, datetime.now(TZ))
-    await safe_edit(cb.message, text, markup)
+    await safe_edit(message, text, markup)
 
 
 @watch_router.callback_query(WatchHourCb.filter())
@@ -263,21 +260,18 @@ async def on_watch_hour(
     stats: Stats,
 ) -> None:
     lang = lang_of(cb.from_user)
-    if not isinstance(cb.message, Message):
-        await answer_quietly(cb, t(lang, "stale_button"), show_alert=True)
+    if (resolved := await resolve_day(cb, callback_data.day, lang)) is None:
         return
-    day = await resolve_day(cb, cb.message, callback_data.day, lang)
-    if day is None:
-        return
+    message, day = resolved
     now = datetime.now(TZ)
     if callback_data.hour not in watch_hours(day, now):
         # An old grid: the hour has passed meanwhile, or the data is forged.
         await answer_quietly(cb, t(lang, "stale_button"), show_alert=True)
         text, markup = hours_view(day, DEFAULT_RANGE, lang, now)
-        await safe_edit(cb.message, text, markup)
+        await safe_edit(message, text, markup)
         return
 
-    chat_id = cb.message.chat.id
+    chat_id = message.chat.id
     venues = availability.venues
     try:
         sub = subscriptions.create(
@@ -294,13 +288,13 @@ async def on_watch_hour(
         notice = t(lang, "watch_limit", limit=MAX_SUBSCRIPTIONS)
         subs = subscriptions.list_for_chat(chat_id, now)
         text, markup = subs_view(subs, venues, lang, notice)
-        await safe_edit(cb.message, text, markup)
+        await safe_edit(message, text, markup)
         return
     else:
         stats.track_event("watch_created")
     await answer_quietly(cb)
     text, markup = card_view(sub, venues, lang, now)
-    await safe_edit(cb.message, text, markup)
+    await safe_edit(message, text, markup)
 
 
 @watch_router.callback_query(WatchCb.filter())

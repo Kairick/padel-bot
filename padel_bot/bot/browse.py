@@ -106,12 +106,9 @@ async def on_day(
     refresh_limiter: RateLimiter,
 ) -> None:
     lang = lang_of(cb.from_user)
-    if not isinstance(cb.message, Message):
-        await answer_quietly(cb, t(lang, "stale_button"), show_alert=True)
+    if (resolved := await resolve_day(cb, callback_data.day, lang)) is None:
         return
-    day = await resolve_day(cb, cb.message, callback_data.day, lang)
-    if day is None:
-        return
+    message, day = resolved
     refresh = callback_data.refresh
     if refresh and not refresh_limiter.allow(cb.from_user.id):
         await answer_quietly(cb, t(lang, "too_many_requests"), show_alert=True)
@@ -119,7 +116,7 @@ async def on_day(
     stats.track_event("refresh" if refresh else "day_view")
     await answer_quietly(cb, t(lang, "refreshing") if refresh else None)
     text, markup = await build_day_view(availability, day, callback_data.rng, lang, refresh=refresh)
-    await safe_edit(cb.message, text, markup)
+    await safe_edit(message, text, markup)
 
 
 @browse_router.callback_query(SlotCb.filter())
@@ -132,12 +129,12 @@ async def on_slot(
 ) -> None:
     lang = lang_of(cb.from_user)
     venues = availability.venues
-    if not isinstance(cb.message, Message) or not 0 <= callback_data.v < len(venues):
+    if not 0 <= callback_data.v < len(venues):
         await answer_quietly(cb, t(lang, "stale_button"), show_alert=True)
         return
-    day = await resolve_day(cb, cb.message, callback_data.day, lang)
-    if day is None:
+    if (resolved := await resolve_day(cb, callback_data.day, lang)) is None:
         return
+    message, day = resolved
     if not slot_limiter.allow(cb.from_user.id):
         await answer_quietly(cb, t(lang, "too_many_requests"), show_alert=True)
         return
@@ -158,12 +155,12 @@ async def on_slot(
         else:
             notice = t(lang, "slot_taken")
         text, markup = await build_day_view(availability, day, rng, lang)
-        await safe_edit(cb.message, f"{notice}\n\n{text}", markup)
+        await safe_edit(message, f"{notice}\n\n{text}", markup)
         return
     stats.track_event("slot_view", venue=venue.key, hour=slots[0].start.hour)
     links = await availability.booking_links(slots, user_id=cb.from_user.id)
     await safe_edit(
-        cb.message,
+        message,
         render_slot(venue, day, slots[0].start, slots, lang),
         slot_keyboard(list(zip(slots, links, strict=True)), day, rng, lang),
     )
