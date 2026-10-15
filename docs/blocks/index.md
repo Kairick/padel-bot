@@ -1,6 +1,6 @@
 # Block map — padel-bot
 
-Built at commit `f8ab2cf` on 2026-10-05, updated at `6db348e` on 2026-10-05. Working tree was clean.
+Built at commit `f8ab2cf` on 2026-10-05, updated at `c736366` on 2026-10-15. Working tree was clean.
 Update with `/repo-blocks update`.
 
 Telegram bot that shows free padel courts in two Batumi clubs (Reservio) and gives booking links that open a pre-filled draft order; users can subscribe to a day/hour and get notified when a booked court is freed. One Python 3.14 process (aiogram long polling + an asyncio monitor task) with one SQLite file, deployed as a single Fly.io machine. Small repo (~2.9k source lines): all source was read.
@@ -70,7 +70,7 @@ Sequence diagrams: [flows.md](flows.md).
 **Not in blocks:** `padel_bot/main.py`, `padel_bot/domain.py`, `padel_bot/bot/common.py`, `padel_bot/config.py`, `padel_bot/db.py`, `padel_bot/reservio/models.py`, `padel_bot/bot/i18n.py`, `padel_bot/bot/throttle.py`, `scripts/`
 - `padel_bot/main.py` — composition root, see Wiring.
 - `padel_bot/domain.py` — shared domain without project imports: `TZ` (Asia/Tbilisi), play day (`DAY_START`, `current_play_day`, `TimeRange`, `WHOLE_DAY`), `Lang`, `detect_lang`. Tests: `tests/test_play_day.py`, `tests/test_service.py`, `tests/test_i18n.py`.
-- `padel_bot/bot/common.py` — handler helpers for every private router: `private_router`, `lang_of`, `answer_quietly`, `safe_edit`, `resolve_day`, `build_day_view`.
+- `padel_bot/bot/common.py` — handler helpers for every private router: `private_router`, `lang_of`, `answer_quietly`, `safe_edit`, `resolve_day` (checks that the callback message is accessible and returns it with the day), `build_day_view`.
 - `padel_bot/config.py` — `Settings` (env: `BOT_TOKEN`, `LOG_LEVEL`, `CACHE_TTL_SECONDS`, `ADMIN_IDS`, `STATS_SALT`, `STATS_DB_PATH`, `MONITOR_*`, `VENUES_FILE`, `RESERVIO_API_URL`), `load_venues`.
 - `venues.yaml` — clubs, courts, Reservio service ids and prices (data, not code).
 - `padel_bot/db.py` — one SQLite connection (WAL, foreign keys) for stats and subscriptions.
