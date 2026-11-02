@@ -39,12 +39,8 @@ venues:
       - name: Court A
         group: Road side
         services:
-          - {id: adcd4ab2-597c-4173-8090-75595b5ef390, price: 50}  # 08:00-13:00
-          - {id: 8f38cc70-a224-40e6-81d6-b6c7e32d8344, price: 65}  # 13:00-17:00
-          - {id: 77bc9810-6d74-406a-9568-544d0f381924, price: 80}  # 17:00-02:00
+          - {id: eb1b95be-afbb-4eeb-8281-5aac99a7b2a5, price: 80}
       - name: Court B
         group: Sea side
         services:
-          - {id: 972672c5-94ba-4d1a-bdfd-f2839a0ceeb7, price: 50}  # 08:00-13:00
-          - {id: 896c724c-6d75-405c-80ae-87e73e58eec4, price: 65}  # 13:00-17:00
-          - {id: 9813ae70-d196-4426-8b04-480916a8d981, price: 80}  # 17:00-02:00
+          - {id: f66dd090-5140-41d4-881c-0a0e25fd0125, price: 80}
