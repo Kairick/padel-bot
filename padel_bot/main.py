@@ -12,7 +12,7 @@ from aiogram.enums import ParseMode
 from aiogram.exceptions import TelegramAPIError
 from aiogram.types import BotCommand
 
-from padel_bot.bot.browse import browse_router, group_router
+from padel_bot.bot.browse import browse_router, fallback_router, group_browse_router
 from padel_bot.bot.feedback import feedback_router
 from padel_bot.bot.i18n import t
 from padel_bot.bot.throttle import RateLimiter
@@ -46,7 +46,9 @@ def build_dispatcher(stats: Stats) -> Dispatcher:
     dp.message.outer_middleware(StatsMiddleware(stats))
     dp.callback_query.outer_middleware(StatsMiddleware(stats))
     # The fallback router goes last: it takes everything the private ones rejected.
-    dp.include_routers(browse_router, watch_router, feedback_router, group_router)
+    dp.include_routers(
+        browse_router, group_browse_router, watch_router, feedback_router, fallback_router
+    )
     return dp
 
 

@@ -3,11 +3,19 @@ from datetime import date, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from aiogram.filters import CommandObject
 from aiogram.types import Message
 
 from padel_bot.bot import watch
 from padel_bot.bot.i18n import WEEKLY, t
-from padel_bot.bot.keyboards import DayCb, WatchCb, WatchDayCb, WatchHourCb, encode_day
+from padel_bot.bot.keyboards import (
+    DayCb,
+    WatchCb,
+    WatchDayCb,
+    WatchHourCb,
+    encode_day,
+    start_link,
+)
 from padel_bot.db import connect
 from padel_bot.domain import TZ, current_play_day
 from padel_bot.monitoring.models import Subscription
@@ -337,3 +345,23 @@ def test_card_view_escapes_club_name(venues):
 
     assert text.endswith("Sea &amp; Road · 1 корт")
     assert buttons(markup)[2] == ["🏟 Sea & Road"]  # button labels are plain text
+
+
+async def test_watch_link_opens_the_hour_grid_in_private_chat():
+    day = tomorrow()
+    message = MagicMock(from_user=MagicMock(language_code="ru"))
+    message.answer = AsyncMock()
+    args = start_link("padel_bot", WatchDayCb(day=encode_day(day), rng="e")).split("=", 1)[1]
+
+    await watch.cmd_start_watch(message, CommandObject(command="start", args=args))
+
+    assert message.answer.await_args.args[0].endswith(t("ru", "watch_pick_hour"))
+
+
+async def test_old_watch_link_offers_another_day():
+    message = MagicMock(from_user=MagicMock(language_code="ru"))
+    message.answer = AsyncMock()
+
+    await watch.cmd_start_watch(message, CommandObject(command="start", args="wh_20000101_w"))
+
+    assert message.answer.await_args.args[0] == t("ru", "watch_start")

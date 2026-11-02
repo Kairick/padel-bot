@@ -76,14 +76,8 @@ TEXTS: dict[str, dict[Lang, str]] = {
         "en": "Stats are disabled. Add ADMIN_IDS={user_id} to the bot settings and restart it.",
     },
     "private_only": {
-        "ru": (
-            "Я работаю только в личных сообщениях, чтобы ссылки на бронь не достались другим. "
-            "Напиши мне: {link}"
-        ),
-        "en": (
-            "I only work in private chats, so booking links don't end up with others. "
-            "Message me: {link}"
-        ),
+        "ru": "Подписки и отзывы — только в личных сообщениях. Напиши мне: {link}",
+        "en": "Subscriptions and feedback work only in a private chat. Message me: {link}",
     },
     "private_only_short": {
         "ru": "Открой бота в личных сообщениях",

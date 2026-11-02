@@ -27,5 +27,5 @@
 
 ## Notes
 - Concurrency rule: every decision is made before the handler's first `await` (`feedback.py:7`), because aiogram runs updates concurrently.
-- Registered after `watch_router` and before `group_router`; its `NOT_COMMAND` catch-all must stay late in the order *(inferred)*.
+- Registered after `watch_router` and before `fallback_router`; its `NOT_COMMAND` catch-all must stay late in the order *(inferred)*.
 - Sender line is Russian-only (admin-facing).

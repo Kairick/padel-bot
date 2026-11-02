@@ -88,3 +88,18 @@ def test_days_keyboard_labels():
     en = [b.text for row in days_keyboard(DAY, "en").inline_keyboard for b in row]
     assert ru[:3] == ["Сегодня", "Завтра", "чт 17.09"]
     assert en[:3] == ["Today", "Tomorrow", "Thu 17.09"]
+
+
+async def test_group_day_keyboard_links_private_screens_to_the_bot(venues):
+    result = await make_result(venues)
+    markup = day_keyboard(result, venues, "w", "ru", bot_username="padel_bot")
+    rows = markup.inline_keyboard
+
+    slot_buttons = rows[2]
+    assert [b.text for b in slot_buttons] == ["18:00 (2)", "00:00 (1)"]
+    assert slot_buttons[0].callback_data is None
+    assert slot_buttons[0].url == "https://t.me/padel_bot?start=s_20260915_w_0_1800"
+    watch_button = rows[-2][0]
+    assert watch_button.url == "https://t.me/padel_bot?start=wh_20260915_w"
+    # Browsing stays in the group: ranges, other day, refresh.
+    assert all(b.callback_data for b in rows[0] + rows[-1])

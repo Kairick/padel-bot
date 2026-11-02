@@ -43,17 +43,22 @@ def test_every_private_command_is_in_the_menu_or_deliberately_hidden():
     assert private == set(COMMAND_KEYS) | set(HIDDEN_COMMANDS)
 
 
-def test_group_points_every_user_command_to_private_chat_but_not_stats():
-    assert handled_commands(browse.group_router) == set(COMMAND_KEYS) | {"days"}
+def test_group_answers_every_user_command_but_not_stats():
+    group = handled_commands(browse.group_browse_router)
+    to_private = handled_commands(browse.fallback_router)
+    assert group == {"start", "days", "today", "tomorrow"}
+    assert group | to_private == set(COMMAND_KEYS) | {"days"}
+    assert not group & to_private
 
 
 def test_fallback_router_is_included_last():
     dp = build_dispatcher(MagicMock())
     assert dp.sub_routers == [
         browse.browse_router,
+        browse.group_browse_router,
         watch.watch_router,
         feedback.feedback_router,
-        browse.group_router,
+        browse.fallback_router,
     ]
     # A router can belong to one dispatcher only; free them for the next test.
     for r in dp.sub_routers:

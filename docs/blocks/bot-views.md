@@ -5,12 +5,13 @@
 
 ## Interface
 - Texts: `render_day`, `render_slot`, `render_notification`, `day_title`, `day_button_label`, `fmt_price`, `group_by_start`.
-- Keyboards: `days_keyboard`, `day_keyboard`, `slot_keyboard`, `notification_keyboard`.
+- Keyboards: `days_keyboard`, `day_keyboard` (with `bot_username` — group mode: slot and Watch buttons become private-chat links), `slot_keyboard`, `notification_keyboard`.
+- Deep links: `start_link` (callback data → `t.me/<bot>?start=...`, `:` → `_`), `parse_start_link`, `is_start_link` (magic filter for `CommandStart`).
 - Callback data: `DayCb` (`d`), `SlotCb` (`s`), `WatchDayCb` (`wh`), `WatchHourCb` (`wn`), `WatchCb` (`wt`), constants `NOOP`, `DAYS`, `WATCH`.
 - Day codec and guard: `encode_day`, `decode_day`, `try_decode_day`, `parse_day` (rejects days outside the 7-day window), `normalize_range`, `RANGES`, `DEFAULT_RANGE`, `BOOKING_WINDOW_DAYS`.
 
 ## Owns
-- Contracts: callback-data wire format (must stay under Telegram's 64-byte limit; changing it makes old buttons stale).
+- Contracts: callback-data wire format (must stay under Telegram's 64-byte limit; changing it makes old buttons stale). `SlotCb` and `WatchDayCb` are also /start parameters of group links (same limit, only `[A-Za-z0-9_-]`).
 - Persistent / in-memory: nothing.
 
 ## Depends on

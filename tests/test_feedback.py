@@ -308,9 +308,10 @@ def app():
     availability.get_availability = AsyncMock(return_value=Availability(day=date.today(), slots=[]))
     routers = [
         browse.browse_router,
+        browse.group_browse_router,
         watch.watch_router,
         feedback.feedback_router,
-        browse.group_router,
+        browse.fallback_router,
     ]
     dp = Dispatcher()
     dp.include_routers(*routers)

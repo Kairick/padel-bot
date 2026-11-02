@@ -4,7 +4,7 @@
 **Code:** `padel_bot/bot/watch.py`
 
 ## Interface
-- Commands: `/watch` (day picker with a hint), `/subs` (list of the chat's subscriptions).
+- Commands: `/watch` (day picker with a hint), `/subs` (list of the chat's subscriptions), `/start wh_<day>_<rng>` (`cmd_start_watch`) — the Watch link of a group message, opens the hour grid (an outdated day falls back to `/watch`).
 - Callbacks: `WATCH` (start), `WatchDayCb` (hour grid), `WatchHourCb` (create subscription, open card), `WatchCb` actions `open`, `del`, `done`, `kind`, `len`, `club`, `courts`.
 - `notification_message(freed, venues, hidden, today, lang)` — text + keyboard of a freed-courts notification; `main.py` hands it to the [monitor](monitor.md).
 - Pure helpers: `watch_hours`, `toggle_kind`, `toggle_length`, `toggle_club`, `toggle_courts`, `hours_view`, `card_view`, `subs_view`.

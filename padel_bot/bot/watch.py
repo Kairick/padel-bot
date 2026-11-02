@@ -8,7 +8,7 @@ from datetime import date, datetime
 from html import escape
 
 from aiogram import F
-from aiogram.filters import Command
+from aiogram.filters import Command, CommandObject, CommandStart
 from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
 
 from padel_bot.bot.common import (
@@ -30,9 +30,11 @@ from padel_bot.bot.keyboards import (
     WatchHourCb,
     days_keyboard,
     encode_day,
+    is_start_link,
     normalize_range,
     notification_keyboard,
     parse_day,
+    parse_start_link,
 )
 from padel_bot.domain import TZ, Lang, current_play_day
 from padel_bot.monitoring.models import (
@@ -219,6 +221,19 @@ async def cmd_watch(message: Message) -> None:
     await message.answer(
         t(lang, "watch_start"), reply_markup=days_keyboard(current_play_day(), lang)
     )
+
+
+@watch_router.message(CommandStart(deep_link=True, magic=is_start_link(WatchDayCb)))
+async def cmd_start_watch(message: Message, command: CommandObject) -> None:
+    """The Watch button of a group message: the hour grid of its day, in the private chat."""
+    data = parse_start_link(command.args, WatchDayCb)
+    day = parse_day(data.day, current_play_day()) if data else None
+    if data is None or day is None:
+        # An old group message (the day has passed) or garbage: pick another day.
+        await cmd_watch(message)
+        return
+    text, markup = hours_view(day, data.rng, lang_of(message.from_user), datetime.now(TZ))
+    await message.answer(text, reply_markup=markup)
 
 
 @watch_router.message(Command("subs"))

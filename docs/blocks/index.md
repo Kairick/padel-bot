@@ -10,7 +10,7 @@ Telegram bot that shows free padel courts in two Batumi clubs (Reservio) and giv
 |---|---|---|
 | [reservio-client](reservio-client.md) | HTTP to Reservio: free slots, draft orders | `padel_bot/reservio/client.py` |
 | [availability](availability.md) | Slots for a play day across venues, caches, per-user booking links | `padel_bot/reservio/service.py` |
-| [browse](browse.md) | Day → slots → booking links flow, group fallback router | `padel_bot/bot/browse.py` |
+| [browse](browse.md) | Day → slots → booking links flow; slots-only view in groups, fallback router | `padel_bot/bot/browse.py` |
 | [bot-views](bot-views.md) | Message texts, keyboards, callback-data contracts | `padel_bot/bot/formatting.py`, `padel_bot/bot/keyboards.py` |
 | [watch-ui](watch-ui.md) | Subscription screens: hour grid, card, `/watch`, `/subs` | `padel_bot/bot/watch.py` |
 | [subscriptions](subscriptions.md) | Subscription model and SQLite store (matches, poll state) | `padel_bot/monitoring/models.py`, `padel_bot/monitoring/store.py` |
@@ -64,13 +64,13 @@ Sequence diagrams: [flows.md](flows.md).
 4. monitor task dies (bug outside a cycle) → `main.serve` alerts `ADMIN_IDS`, stops polling, exits with code 1 → Fly restarts the machine.
 
 ## Wiring
-`padel_bot/main.py` (`padel-bot` script): settings → logging → `load_venues(venues.yaml)` → one `ReservioClient` → `AvailabilityService` → `Bot` (HTML parse mode) → `db.connect` → `Stats` + `SubscriptionStore` on the same connection → `build_dispatcher`: `StatsMiddleware` (outer, messages + callbacks), routers in order `browse_router`, `watch_router`, `feedback_router`, `group_router` → command menu en/ru from `COMMAND_KEYS` (`HIDDEN_COMMANDS` stay off it) → `Poller(render=notification_message)` task if `MONITOR_ENABLED` → `serve`: `start_polling` injecting `availability`, `stats`, `subscriptions`, `admin_ids`, three `RateLimiter`s, while watching the monitor task (crash → admin alert, `MonitorCrashed`, exit 1). Shutdown cancels the monitor, closes the HTTP client, bot session and DB. Covered by `tests/test_main.py`.
+`padel_bot/main.py` (`padel-bot` script): settings → logging → `load_venues(venues.yaml)` → one `ReservioClient` → `AvailabilityService` → `Bot` (HTML parse mode) → `db.connect` → `Stats` + `SubscriptionStore` on the same connection → `build_dispatcher`: `StatsMiddleware` (outer, messages + callbacks), routers in order `browse_router`, `group_browse_router`, `watch_router`, `feedback_router`, `fallback_router` → command menu en/ru from `COMMAND_KEYS` (`HIDDEN_COMMANDS` stay off it) → `Poller(render=notification_message)` task if `MONITOR_ENABLED` → `serve`: `start_polling` injecting `availability`, `stats`, `subscriptions`, `admin_ids`, three `RateLimiter`s, while watching the monitor task (crash → admin alert, `MonitorCrashed`, exit 1). Shutdown cancels the monitor, closes the HTTP client, bot session and DB. Covered by `tests/test_main.py`.
 
 ## Shared
 **Not in blocks:** `padel_bot/main.py`, `padel_bot/domain.py`, `padel_bot/bot/common.py`, `padel_bot/config.py`, `padel_bot/db.py`, `padel_bot/reservio/models.py`, `padel_bot/bot/i18n.py`, `padel_bot/bot/throttle.py`, `scripts/`
 - `padel_bot/main.py` — composition root, see Wiring.
 - `padel_bot/domain.py` — shared domain without project imports: `TZ` (Asia/Tbilisi), play day (`DAY_START`, `current_play_day`, `TimeRange`, `WHOLE_DAY`), `Lang`, `detect_lang`. Tests: `tests/test_play_day.py`, `tests/test_service.py`, `tests/test_i18n.py`.
-- `padel_bot/bot/common.py` — handler helpers for every private router: `private_router`, `lang_of`, `answer_quietly`, `safe_edit`, `resolve_day` (checks that the callback message is accessible and returns it with the day), `build_day_view`.
+- `padel_bot/bot/common.py` — handler helpers: `private_router`, `group_router` (groups, bot's own messages), `link_target` (bot username in groups, else None), `lang_of`, `answer_quietly`, `safe_edit`, `resolve_day` (checks that the callback message is accessible and returns it with the day), `build_day_view`.
 - `padel_bot/config.py` — `Settings` (env: `BOT_TOKEN`, `LOG_LEVEL`, `CACHE_TTL_SECONDS`, `ADMIN_IDS`, `STATS_SALT`, `STATS_DB_PATH`, `MONITOR_*`, `VENUES_FILE`, `RESERVIO_API_URL`), `load_venues`.
 - `venues.yaml` — clubs, courts, Reservio service ids and prices (data, not code).
 - `padel_bot/db.py` — one SQLite connection (WAL, foreign keys) for stats and subscriptions.

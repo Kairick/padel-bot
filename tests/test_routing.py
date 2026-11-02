@@ -65,7 +65,7 @@ async def test_private_router_takes_only_own_messages_in_private_chats():
 
 
 async def test_fallback_router_catches_every_rejected_callback():
-    fallback = browse.group_router.callback_query
+    fallback = browse.fallback_router.callback_query
     for cb in (
         callback(message("private", from_bot=False)),
         callback(message("group", from_bot=True)),
@@ -107,3 +107,23 @@ async def test_on_slot_reports_failed_venue_instead_of_taken_slot(venues):
     text = cb.message.edit_text.await_args.args[0]
     assert text.startswith(f"⚠️ {venues[0].name}: {t('ru', 'venue_failed')}")
     assert t("ru", "slot_taken") not in text
+
+
+async def test_group_router_takes_only_own_messages_in_groups():
+    group = browse.group_browse_router.callback_query
+    for chat_type in ("group", "supergroup"):
+        assert await passes(group, callback(message(chat_type, from_bot=True)))
+        assert not await passes(group, callback(message(chat_type, from_bot=False)))
+    assert not await passes(group, callback(message("private", from_bot=True)))
+    assert not await passes(group, callback(INACCESSIBLE))
+    assert not await passes(group, callback(None))
+
+
+async def test_group_slot_tap_is_never_handled_as_a_booking():
+    # Slot buttons in groups are links; a forged SlotCb from a group falls to the fallback.
+    cb = callback(message("group", from_bot=True))
+    cb = cb.model_copy(update={"data": SlotCb(day="20260915", rng="w", v=0, hm="1800").pack()})
+    assert not await passes(browse.browse_router.callback_query, cb)
+    for handler in browse.group_browse_router.callback_query.handlers:
+        assert not (await handler.check(cb))[0]
+    assert await passes(browse.fallback_router.callback_query, cb)
