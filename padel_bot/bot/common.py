@@ -3,7 +3,7 @@
 import logging
 from datetime import date
 
-from aiogram import F, Router
+from aiogram import Bot, F, Router
 from aiogram.enums import ChatType
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import CallbackQuery, InlineKeyboardMarkup, Message, User
@@ -43,8 +43,8 @@ def private_router(name: str) -> Router:
 def group_router(name: str) -> Router:
     """Router for group chats: browsing only, on the bot's own messages.
 
-    Slot and Watch taps in groups are answered with a link to the private chat, so nothing
-    here creates booking orders or touches subscriptions.
+    Slot and Watch buttons in groups are links to the private chat (see day_keyboard), so
+    nothing here creates booking orders or touches subscriptions.
     """
     router = Router(name=name)
     router.message.filter(F.chat.type != ChatType.PRIVATE)
@@ -53,6 +53,13 @@ def group_router(name: str) -> Router:
         F.message.from_user.is_bot,
     )
     return router
+
+
+async def link_target(chat_type: str, bot: Bot) -> str | None:
+    """Bot username for private-chat links in a group message; None in the private chat."""
+    if chat_type == ChatType.PRIVATE:
+        return None
+    return (await bot.me()).username
 
 
 def lang_of(user: User | None) -> Lang:
@@ -78,11 +85,12 @@ async def build_day_view(
     rng: str,
     lang: Lang,
     refresh: bool = False,
+    bot_username: str | None = None,
 ) -> tuple[str, InlineKeyboardMarkup]:
     rng = normalize_range(rng)
     result = await availability.get_availability(day, RANGES[rng], force_refresh=refresh)
     text = render_day(result, availability.venues, rng, lang)
-    return text, day_keyboard(result, availability.venues, rng, lang)
+    return text, day_keyboard(result, availability.venues, rng, lang, bot_username)
 
 
 async def safe_edit(message: Message, text: str, markup: InlineKeyboardMarkup) -> None:

@@ -7,7 +7,7 @@
 - Commands (private chats): `/start` and `/days` (same handler: day picker), `/today`, `/tomorrow`, `/stats` (admin-only, see [stats](stats.md)); `/start s_<day>_<rng>_<v>_<hm>` (`cmd_start_slot`) — a slot link from a group message, opens the slot view.
 - Commands (groups): `/start`, `/days`, `/today`, `/tomorrow` — the same day picker and day view.
 - Callbacks: `DAYS` (day picker), `DayCb` (day view, range switch, refresh), `SlotCb` (slot view with booking links), `NOOP`.
-- `browse_router` — private chats and the bot's own messages only; `group_browse_router` — groups, the bot's own messages only, `DAYS`/`DayCb`/`NOOP` callbacks ; `SlotCb`/`WatchDayCb` taps are answered with `answerCallbackQuery(url=start_link(...))`, which opens the private chat (callback, not URL buttons: Telegram's arrow on URL buttons hides the time on phones); `fallback_router` — answers `/watch`, `/subs`, `/feedback` in groups with "write me in private" and catches every rejected callback.
+- `browse_router` — private chats and the bot's own messages only; `group_browse_router` — groups, the bot's own messages only, `DAYS`/`DayCb`/`NOOP` callbacks (slot and Watch buttons there are `start_link` URLs to the private chat); `fallback_router` — answers `/watch`, `/subs`, `/feedback` in groups with "write me in private" and catches every rejected callback.
 
 ## Owns
 - External effects: each slot tap creates Reservio draft orders (through [availability](availability.md) `booking_links`).

@@ -84,7 +84,7 @@ async def test_outdated_day_reopens_day_picker(venues):
 
         await browse.on_slot(cb, slot_cb(day), availability, MagicMock(), RateLimiter(10, 60))
         await browse.on_day(
-            cb, DayCb(day=day, rng="w"), availability, MagicMock(), RateLimiter(10, 60)
+            cb, DayCb(day=day, rng="w"), availability, MagicMock(), RateLimiter(10, 60), MagicMock()
         )
 
         availability.get_availability.assert_not_awaited()
@@ -123,7 +123,7 @@ async def test_on_day_refresh_rate_limited(venues):
     availability = make_availability(venues, events)
     data = DayCb(day=today(), rng="w", refresh=True)
 
-    await browse.on_day(cb, data, availability, MagicMock(), RateLimiter(0, 60))
+    await browse.on_day(cb, data, availability, MagicMock(), RateLimiter(0, 60), MagicMock())
 
     cb.answer.assert_awaited_once_with(t("ru", "too_many_requests"), show_alert=True)
     availability.get_availability.assert_not_awaited()
@@ -135,7 +135,7 @@ async def test_on_day_plain_view_is_not_rate_limited(venues):
     availability = make_availability(venues, events)
 
     await browse.on_day(
-        cb, DayCb(day=today(), rng="w"), availability, MagicMock(), RateLimiter(0, 60)
+        cb, DayCb(day=today(), rng="w"), availability, MagicMock(), RateLimiter(0, 60), MagicMock()
     )
 
     availability.get_availability.assert_awaited_once()
@@ -149,7 +149,7 @@ async def test_stale_callback_answer_does_not_stop_the_update(venues):
     availability = make_availability(venues, events)
 
     await browse.on_day(
-        cb, DayCb(day=today(), rng="w"), availability, MagicMock(), RateLimiter(10, 60)
+        cb, DayCb(day=today(), rng="w"), availability, MagicMock(), RateLimiter(10, 60), MagicMock()
     )
 
     availability.get_availability.assert_awaited_once()
@@ -256,16 +256,21 @@ async def test_slot_link_rate_limited(venues):
     availability.booking_links.assert_not_awaited()
 
 
-async def test_group_slot_and_watch_taps_open_the_private_chat():
+async def test_group_day_view_links_slots_to_private_chat(venues):
+    events: list[str] = []
+    cb = make_cb(events)
+    cb.message.chat = MagicMock(type="group")
+    availability = make_availability(venues, events)
     bot = MagicMock()
     bot.me = AsyncMock(return_value=MagicMock(username="padel_bot"))
-    for data in (slot_cb(today()), WatchDayCb(day=today(), rng="e")):
-        cb = MagicMock()
-        cb.answer = AsyncMock()
 
-        await browse.on_group_private_button(cb, data, bot)
+    await browse.on_day(
+        cb, DayCb(day=today(), rng="w"), availability, MagicMock(), RateLimiter(10, 60), bot
+    )
 
-        cb.answer.assert_awaited_once_with(url=start_link("padel_bot", data))
+    markup = cb.message.edit_text.await_args.kwargs["reply_markup"]
+    watch = next(b for row in markup.inline_keyboard for b in row if b.text == t("ru", "watch_btn"))
+    assert watch.url.startswith("https://t.me/padel_bot?start=wh_")
 
 
 async def handled_by(router, args: str | None):

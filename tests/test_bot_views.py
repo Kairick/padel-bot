@@ -88,3 +88,29 @@ def test_days_keyboard_labels():
     en = [b.text for row in days_keyboard(DAY, "en").inline_keyboard for b in row]
     assert ru[:3] == ["Сегодня", "Завтра", "чт 17.09"]
     assert en[:3] == ["Today", "Tomorrow", "Thu 17.09"]
+
+
+async def test_group_day_keyboard_links_private_screens_to_the_bot(venues):
+    result = await make_result(venues)
+    markup = day_keyboard(result, venues, "w", "ru", bot_username="padel_bot")
+    rows = markup.inline_keyboard
+
+    slot_buttons = rows[2]
+    assert [b.text for b in slot_buttons] == ["18:00 (2)", "00:00 (1)"]
+    assert slot_buttons[0].callback_data is None
+    assert slot_buttons[0].url == "https://t.me/padel_bot?start=s_20260915_w_0_1800"
+    watch_button = rows[-2][0]
+    assert watch_button.url == "https://t.me/padel_bot?start=wh_20260915_w"
+    # Browsing stays in the group: ranges, other day, refresh.
+    assert all(b.callback_data for b in rows[0] + rows[-1])
+
+
+async def test_group_day_keyboard_fits_url_arrows(venues):
+    client = FakeClient({"pp1": [slot(f"2026-09-15T{h}:00:00") for h in range(10, 15)]})
+    result = await AvailabilityService(client, venues).get_availability(
+        DAY, now=dt("2026-09-15T09:00:00")
+    )
+    private = day_keyboard(result, venues, "w", "ru").inline_keyboard
+    group = day_keyboard(result, venues, "w", "ru", bot_username="padel_bot").inline_keyboard
+    assert [len(r) for r in private[2:4]] == [4, 1]
+    assert [len(r) for r in group[2:4]] == [3, 2]

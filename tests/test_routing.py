@@ -119,14 +119,11 @@ async def test_group_router_takes_only_own_messages_in_groups():
     assert not await passes(group, callback(None))
 
 
-async def test_group_slot_tap_only_links_to_private_chat():
+async def test_group_slot_tap_is_never_handled_as_a_booking():
+    # Slot buttons in groups are links; a forged SlotCb from a group falls to the fallback.
     cb = callback(message("group", from_bot=True))
     cb = cb.model_copy(update={"data": SlotCb(day="20260915", rng="w", v=0, hm="1800").pack()})
     assert not await passes(browse.browse_router.callback_query, cb)
-    assert await passes(browse.group_browse_router.callback_query, cb)
-    handled = [
-        h.callback
-        for h in browse.group_browse_router.callback_query.handlers
-        if (await h.check(cb))[0]
-    ]
-    assert handled == [browse.on_group_private_button]
+    for handler in browse.group_browse_router.callback_query.handlers:
+        assert not (await handler.check(cb))[0]
+    assert await passes(browse.fallback_router.callback_query, cb)
