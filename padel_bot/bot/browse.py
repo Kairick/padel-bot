@@ -1,8 +1,10 @@
+import logging
 from datetime import date, timedelta
 from html import escape
 
 from aiogram import Bot, F, Router
 from aiogram.enums import ChatType
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import Command, CommandObject, CommandStart
 from aiogram.types import CallbackQuery, InlineKeyboardMarkup, Message
 
@@ -11,7 +13,6 @@ from padel_bot.bot.common import (
     build_day_view,
     group_router,
     lang_of,
-    link_target,
     private_router,
     resolve_day,
     safe_edit,
@@ -32,14 +33,17 @@ from padel_bot.bot.keyboards import (
     parse_day,
     parse_start_link,
     slot_keyboard,
+    start_link,
 )
 from padel_bot.bot.throttle import RateLimiter
 from padel_bot.domain import Lang, current_play_day
 from padel_bot.reservio.service import AvailabilityService
 from padel_bot.stats import Stats, format_summary
 
+log = logging.getLogger(__name__)
+
 browse_router = private_router("private")
-# Free slots in groups; the day view there links slots to the private chat.
+# Free slots in groups; slot and Watch taps there open the private chat.
 group_browse_router = group_router("group")
 
 # Included last: group commands that need the private chat, plus every callback the routers
@@ -103,32 +107,25 @@ async def cmd_stats(
 
 
 async def answer_day_view(
-    message: Message, availability: AvailabilityService, stats: Stats, bot: Bot, day: date
+    message: Message, availability: AvailabilityService, stats: Stats, day: date
 ) -> None:
     lang = lang_of(message.from_user)
     stats.track_event("day_view")
-    username = await link_target(message.chat.type, bot)
-    text, markup = await build_day_view(
-        availability, day, DEFAULT_RANGE, lang, bot_username=username
-    )
+    text, markup = await build_day_view(availability, day, DEFAULT_RANGE, lang)
     await message.answer(text, reply_markup=markup)
 
 
 @browse_router.message(Command("today"))
 @group_browse_router.message(Command("today"))
-async def cmd_today(
-    message: Message, availability: AvailabilityService, stats: Stats, bot: Bot
-) -> None:
-    await answer_day_view(message, availability, stats, bot, current_play_day())
+async def cmd_today(message: Message, availability: AvailabilityService, stats: Stats) -> None:
+    await answer_day_view(message, availability, stats, current_play_day())
 
 
 @browse_router.message(Command("tomorrow"))
 @group_browse_router.message(Command("tomorrow"))
-async def cmd_tomorrow(
-    message: Message, availability: AvailabilityService, stats: Stats, bot: Bot
-) -> None:
+async def cmd_tomorrow(message: Message, availability: AvailabilityService, stats: Stats) -> None:
     day = current_play_day() + timedelta(days=1)
-    await answer_day_view(message, availability, stats, bot, day)
+    await answer_day_view(message, availability, stats, day)
 
 
 @browse_router.callback_query(F.data == NOOP)
@@ -154,7 +151,6 @@ async def on_day(
     availability: AvailabilityService,
     stats: Stats,
     refresh_limiter: RateLimiter,
-    bot: Bot,
 ) -> None:
     lang = lang_of(cb.from_user)
     if (resolved := await resolve_day(cb, callback_data.day, lang)) is None:
@@ -166,10 +162,7 @@ async def on_day(
         return
     stats.track_event("refresh" if refresh else "day_view")
     await answer_quietly(cb, t(lang, "refreshing") if refresh else None)
-    username = await link_target(message.chat.type, bot)
-    text, markup = await build_day_view(
-        availability, day, callback_data.rng, lang, refresh=refresh, bot_username=username
-    )
+    text, markup = await build_day_view(availability, day, callback_data.rng, lang, refresh=refresh)
     await safe_edit(message, text, markup)
 
 
@@ -226,6 +219,23 @@ async def slot_view(
     links = await availability.booking_links(slots, user_id=user_id)
     text = render_slot(venue, day, slots[0].start, slots, lang)
     return text, slot_keyboard(list(zip(slots, links, strict=True)), day, rng, lang)
+
+
+@group_browse_router.callback_query(SlotCb.filter())
+@group_browse_router.callback_query(WatchDayCb.filter())
+async def on_group_private_button(
+    cb: CallbackQuery, callback_data: SlotCb | WatchDayCb, bot: Bot
+) -> None:
+    """Slot and Watch taps in a group: Telegram opens the private chat on the same screen.
+
+    Callback buttons rather than URL buttons: Telegram draws an arrow on every URL button,
+    which leaves no room for the time on phones.
+    """
+    me = await bot.me()
+    try:
+        await cb.answer(url=start_link(me.username or "", callback_data))
+    except TelegramBadRequest as e:
+        log.info("callback answer skipped: %s", e)
 
 
 # Not /stats: it's for admins, a group doesn't need to learn it exists.

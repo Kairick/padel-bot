@@ -64,8 +64,9 @@ WATCH = "watch"
 def start_link(bot_username: str, data: CallbackData) -> str:
     """Link that opens the private chat on the screen of button `data`.
 
-    For group messages: the screens behind it create booking orders or subscriptions, which
-    must stay private. A /start parameter allows only [A-Za-z0-9_-], so ':' becomes '_'.
+    For taps in groups: the screens behind slot and Watch buttons create booking orders or
+    subscriptions, which must stay private. A /start parameter allows only [A-Za-z0-9_-],
+    so ':' becomes '_'.
     """
     return f"https://t.me/{bot_username}?start={data.pack().replace(':', '_')}"
 
@@ -131,19 +132,9 @@ def days_keyboard(today: date, lang: Lang, rng: str = DEFAULT_RANGE) -> InlineKe
 
 
 def day_keyboard(
-    availability: Availability,
-    venues: list[Venue],
-    rng: str,
-    lang: Lang,
-    bot_username: str | None = None,
+    availability: Availability, venues: list[Venue], rng: str, lang: Lang
 ) -> InlineKeyboardMarkup:
-    """Day view buttons; with `bot_username` (a group chat) slots and Watch lead to private."""
     day = encode_day(availability.day)
-
-    def private_button(text: str, data: CallbackData) -> InlineKeyboardButton:
-        if bot_username is None:
-            return InlineKeyboardButton(text=text, callback_data=data.pack())
-        return InlineKeyboardButton(text=text, url=start_link(bot_username, data))
 
     rows: list[list[InlineKeyboardButton]] = []
 
@@ -164,15 +155,21 @@ def day_keyboard(
             continue
         rows.append([InlineKeyboardButton(text=f"— {venue.name} —", callback_data=NOOP)])
         buttons = [
-            private_button(
-                f"{start:%H:%M} ({len(items)})",
-                SlotCb(day=day, rng=rng, v=idx, hm=f"{start:%H%M}"),
+            InlineKeyboardButton(
+                text=f"{start:%H:%M} ({len(items)})",
+                callback_data=SlotCb(day=day, rng=rng, v=idx, hm=f"{start:%H%M}").pack(),
             )
             for start, items in groups
         ]
         rows += [buttons[i : i + 4] for i in range(0, len(buttons), 4)]
 
-    rows.append([private_button(t(lang, "watch_btn"), WatchDayCb(day=day, rng=rng))])
+    rows.append(
+        [
+            InlineKeyboardButton(
+                text=t(lang, "watch_btn"), callback_data=WatchDayCb(day=day, rng=rng).pack()
+            )
+        ]
+    )
     rows.append(
         [
             InlineKeyboardButton(text=t(lang, "other_day"), callback_data=DAYS),
