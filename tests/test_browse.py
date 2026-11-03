@@ -256,7 +256,7 @@ async def test_slot_link_rate_limited(venues):
     availability.booking_links.assert_not_awaited()
 
 
-async def test_group_day_view_links_slots_to_private_chat(venues):
+async def test_group_day_view_links_watch_to_private_chat(venues):
     events: list[str] = []
     cb = make_cb(events)
     cb.message.chat = MagicMock(type="group")
@@ -269,7 +269,7 @@ async def test_group_day_view_links_slots_to_private_chat(venues):
     )
 
     markup = cb.message.edit_text.await_args.kwargs["reply_markup"]
-    watch = next(b for row in markup.inline_keyboard for b in row if b.text == t("ru", "watch_btn"))
+    watch = markup.inline_keyboard[-2][0]
     assert watch.url.startswith("https://t.me/padel_bot?start=wh_")
 
 

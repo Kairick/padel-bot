@@ -162,7 +162,7 @@ def day_keyboard(
         groups = group_by_start(by_venue.get(venue.key, []))
         if not groups:
             continue
-        rows.append([InlineKeyboardButton(text=f"— {venue.name} —", callback_data=NOOP)])
+        rows.append([InlineKeyboardButton(text=f"— {venue.short_label} —", callback_data=NOOP)])
         buttons = [
             private_button(
                 f"{start:%H:%M} ({len(items)})",
@@ -174,12 +174,13 @@ def day_keyboard(
         per_row = 4 if bot_username is None else 3
         rows += [buttons[i : i + per_row] for i in range(0, len(buttons), per_row)]
 
+    # Two rows: three labels don't fit one row on phones, or in groups next to the link arrow.
     rows.append([private_button(t(lang, "watch_btn"), WatchDayCb(day=day, rng=rng))])
     rows.append(
         [
-            InlineKeyboardButton(text=t(lang, "other_day"), callback_data=DAYS),
+            InlineKeyboardButton(text=t(lang, "other_day_btn"), callback_data=DAYS),
             InlineKeyboardButton(
-                text=t(lang, "refresh"),
+                text=t(lang, "refresh_btn"),
                 callback_data=DayCb(day=day, rng=rng, refresh=True).pack(),
             ),
         ]

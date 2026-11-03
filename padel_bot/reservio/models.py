@@ -19,9 +19,15 @@ class CourtConfig(BaseModel):
 class Venue(BaseModel):
     key: str
     name: str
+    # Shown on the club's header row of the day view, where a long name only wastes width.
+    short_name: str | None = None
     subdomain: str
     business_id: str
     courts: list[CourtConfig]
+
+    @property
+    def short_label(self) -> str:
+        return self.short_name or self.name
 
     @property
     def base_url(self) -> str:

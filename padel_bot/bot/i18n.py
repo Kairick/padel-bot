@@ -61,6 +61,9 @@ TEXTS: dict[str, dict[Lang, str]] = {
     },
     "other_day": {"ru": "📅 Другой день", "en": "📅 Other day"},
     "refresh": {"ru": "🔄 Обновить", "en": "🔄 Refresh"},
+    # Day view's last rows.
+    "other_day_btn": {"ru": "Дата", "en": "Date"},
+    "refresh_btn": {"ru": "Обновить", "en": "Refresh"},
     "back": {"ru": "⬅️ Назад", "en": "⬅️ Back"},
     "refreshing": {"ru": "Обновляю…", "en": "Refreshing…"},
     "stale_button": {"ru": "Устаревшая кнопка", "en": "This button is outdated"},
@@ -83,10 +86,10 @@ TEXTS: dict[str, dict[Lang, str]] = {
         "ru": "Открой бота в личных сообщениях",
         "en": "Open the bot in a private chat",
     },
-    "watch_btn": {"ru": "🔔 Следить", "en": "🔔 Watch"},
+    "watch_btn": {"ru": "Подписка", "en": "Alert"},
     "watch_start": {
-        "ru": "Выбери день и нажми 🔔 Следить 👇",
-        "en": "Pick a day and tap 🔔 Watch 👇",
+        "ru": "Выбери день и нажми «Подписка» 👇",
+        "en": "Pick a day and tap Alert 👇",
     },
     "watch_pick_hour": {"ru": "С какого часа следить?", "en": "Which hour should I watch?"},
     "watch_no_hours": {
@@ -112,10 +115,10 @@ TEXTS: dict[str, dict[Lang, str]] = {
     },
     "subs_empty": {
         "ru": (
-            "Подписок пока нет. Выбери день и нажми 🔔 Следить, я напишу, когда корт освободится."
+            "Подписок пока нет. Выбери день и нажми «Подписка», я напишу, когда корт освободится."
         ),
         "en": (
-            "No subscriptions yet. Pick a day and tap 🔔 Watch, "
+            "No subscriptions yet. Pick a day and tap Alert, "
             "I'll message you when a court is freed."
         ),
     },

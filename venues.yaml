@@ -3,6 +3,7 @@
 venues:
   - key: padel_port
     name: Padel Port Batumi
+    short_name: Padel Port
     subdomain: padel-port-batumi2
     business_id: 1e32bd0a-0d5c-4e30-9788-ea488e713c4d
     courts:
@@ -33,6 +34,7 @@ venues:
 
   - key: grand_padel
     name: Grand Padel Batumi
+    short_name: Grand Padel
     subdomain: grandpadelbatumi
     business_id: aac3b1f5-7e80-4052-bd09-adc7396cfbec
     courts:

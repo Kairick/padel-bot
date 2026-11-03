@@ -35,9 +35,8 @@ def group_by_start(slots: list[CourtSlot]) -> list[tuple[datetime, list[CourtSlo
 
 
 def render_day(availability: Availability, venues: list[Venue], rng: str, lang: Lang) -> str:
-    """Only the day header: slots themselves are shown as buttons."""
-    range_label = t(lang, f"range_{rng}")
-    lines = [f"📅 <b>{day_title(availability.day, lang)}</b> · {escape(range_label)}"]
+    """Only the day header: slots themselves are shown as buttons, the range by a ✓ on them."""
+    lines = [f"📅 <b>{day_title(availability.day, lang)}</b>"]
     by_venue = availability.by_venue()
     failed = {v.key for v in availability.failed_venues}
 

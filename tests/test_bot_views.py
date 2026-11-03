@@ -26,7 +26,7 @@ async def make_result(venues):
 async def test_render_day_ru(venues):
     result = await make_result(venues)
     text = render_day(result, venues, "w", "ru")
-    assert text.splitlines()[0] == "📅 <b>Вторник, 15 сентября</b> · Весь день"
+    assert text.splitlines()[0] == "📅 <b>Вторник, 15 сентября</b>"
     assert "18:00" not in text
     assert "⚠️ Grand Padel: не удалось получить расписание" in text
     assert "Padel Port" not in text
@@ -35,7 +35,7 @@ async def test_render_day_ru(venues):
 async def test_render_day_en(venues):
     result = await make_result(venues)
     text = render_day(result, venues, "e", "en")
-    assert text.splitlines()[0] == "📅 <b>Tuesday, 15 September</b> · Evening"
+    assert text.splitlines()[0] == "📅 <b>Tuesday, 15 September</b>"
     assert "⚠️ Grand Padel: couldn't load the schedule" in text
 
 
@@ -52,9 +52,10 @@ async def test_keyboards_callback_data_fits_telegram_limit(venues, lang):
     slot_buttons = list(markups[0].inline_keyboard[2])
     assert [b.text for b in slot_buttons] == ["18:00 (2)", "00:00 (1)"]
     assert any(b.url and "booking?step=2" in b.url for b in buttons)
-    watch_row = markups[0].inline_keyboard[-2]
+    watch_row, last_row = markups[0].inline_keyboard[-2:]
     assert [b.text for b in watch_row] == [t(lang, "watch_btn")]
     assert watch_row[0].callback_data == WatchDayCb(day="20260915", rng="w").pack()
+    assert [b.text for b in last_row] == [t(lang, "other_day_btn"), t(lang, "refresh_btn")]
 
 
 async def test_render_slot(venues):
@@ -99,8 +100,9 @@ async def test_group_day_keyboard_links_private_screens_to_the_bot(venues):
     assert [b.text for b in slot_buttons] == ["18:00 (2)", "00:00 (1)"]
     assert slot_buttons[0].callback_data is None
     assert slot_buttons[0].url == "https://t.me/padel_bot?start=s_20260915_w_0_1800"
-    watch_button = rows[-2][0]
-    assert watch_button.url == "https://t.me/padel_bot?start=wh_20260915_w"
+    assert [b.text for b in rows[-2]] == ["Подписка"]
+    assert rows[-2][0].url == "https://t.me/padel_bot?start=wh_20260915_w"
+    assert [b.text for b in rows[-1]] == ["Дата", "Обновить"]
     # Browsing stays in the group: ranges, other day, refresh.
     assert all(b.callback_data for b in rows[0] + rows[-1])
 
@@ -114,3 +116,10 @@ async def test_group_day_keyboard_fits_url_arrows(venues):
     group = day_keyboard(result, venues, "w", "ru", bot_username="padel_bot").inline_keyboard
     assert [len(r) for r in private[2:4]] == [4, 1]
     assert [len(r) for r in group[2:4]] == [3, 2]
+
+
+async def test_club_header_uses_short_name(venues):
+    result = await make_result(venues)
+    venues = [venues[0].model_copy(update={"name": "Padel Port Batumi", "short_name": "PP"})]
+    header = day_keyboard(result, venues, "w", "ru").inline_keyboard[1][0]
+    assert header.text == "— PP —"

@@ -5,7 +5,7 @@
 
 ## Interface
 - Texts: `render_day`, `render_slot`, `render_notification`, `day_title`, `day_button_label`, `fmt_price`, `group_by_start`.
-- Keyboards: `days_keyboard`, `day_keyboard` (with `bot_username` — group mode: slot and Watch buttons become private-chat links, 3 per row since Telegram's arrow on URL buttons cuts the time on phones; `answerCallbackQuery(url=...)` was tried and opens the browser on iOS), `slot_keyboard`, `notification_keyboard`.
+- Keyboards: `days_keyboard`, `day_keyboard` (one row per club header, using `Venue.short_label`; «Подписка» (Watch) on its own row, then «Дата» and «Обновить» — three in one row didn't fit phones; with `bot_username` — group mode: slot and Watch buttons become private-chat links, 3 per row since Telegram's arrow on URL buttons cuts the time on phones; `answerCallbackQuery(url=...)` was tried and opens the browser on iOS), `slot_keyboard`, `notification_keyboard`.
 - Deep links: `start_link` (callback data → `t.me/<bot>?start=...`, `:` → `_`), `parse_start_link`, `is_start_link` (magic filter for `CommandStart`).
 - Callback data: `DayCb` (`d`), `SlotCb` (`s`), `WatchDayCb` (`wh`), `WatchHourCb` (`wn`), `WatchCb` (`wt`), constants `NOOP`, `DAYS`, `WATCH`.
 - Day codec and guard: `encode_day`, `decode_day`, `try_decode_day`, `parse_day` (rejects days outside the 7-day window), `normalize_range`, `RANGES`, `DEFAULT_RANGE`, `BOOKING_WINDOW_DAYS`.
