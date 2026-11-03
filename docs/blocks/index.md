@@ -1,6 +1,6 @@
 # Block map — padel-bot
 
-Built at commit `f8ab2cf` on 2026-10-05, updated at `6d5b9dc` on 2026-11-03 (working tree: start-links and toggle moves, uncommitted). Working tree was clean.
+Built at commit `f8ab2cf` on 2026-10-05, updated at `fe4645a` on 2026-11-03. Working tree was clean.
 Update with `/repo-blocks update`.
 
 Telegram bot that shows free padel courts in two Batumi clubs (Reservio) and gives booking links that open a pre-filled draft order; users can subscribe to a day/hour and get notified when a booked court is freed. One Python 3.14 process (aiogram long polling + an asyncio monitor task) with one SQLite file, deployed as a single Fly.io machine. Small repo (~2.9k source lines): all source was read.
