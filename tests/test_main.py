@@ -6,13 +6,14 @@ from aiogram import Router
 from aiogram.exceptions import TelegramForbiddenError
 from aiogram.filters import Command
 
-from padel_bot.bot import browse, feedback, watch
+from padel_bot.bot import browse, feedback, start_links, watch
 from padel_bot.main import (
     COMMAND_KEYS,
     HIDDEN_COMMANDS,
     MonitorCrashed,
     alert_admins,
     build_dispatcher,
+    check_bot_settings,
     commands,
     serve,
 )
@@ -54,6 +55,7 @@ def test_group_answers_every_user_command_but_not_stats():
 def test_fallback_router_is_included_last():
     dp = build_dispatcher(MagicMock())
     assert dp.sub_routers == [
+        start_links.start_links_router,
         browse.browse_router,
         browse.group_browse_router,
         watch.watch_router,
@@ -112,3 +114,22 @@ async def test_alert_reaches_admins_that_can_receive_it():
     await alert_admins(bot, frozenset({1, 2}), "text")
 
     assert bot.send_message.await_count == 2
+
+
+async def test_bot_settings_alert_when_groups_are_off():
+    bot = MagicMock(send_message=AsyncMock())
+    bot.me = AsyncMock(return_value=MagicMock(can_join_groups=False))
+
+    await check_bot_settings(bot, frozenset({1}))
+
+    chat_id, text = bot.send_message.await_args.args
+    assert chat_id == 1 and "Allow Groups" in text
+
+
+async def test_bot_settings_quiet_when_groups_are_on():
+    bot = MagicMock(send_message=AsyncMock())
+    bot.me = AsyncMock(return_value=MagicMock(can_join_groups=True))
+
+    await check_bot_settings(bot, frozenset({1}))
+
+    bot.send_message.assert_not_awaited()

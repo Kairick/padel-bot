@@ -6,7 +6,7 @@ from aiogram.exceptions import TelegramBadRequest
 from aiogram.filters import CommandObject
 from aiogram.types import Message
 
-from padel_bot.bot import browse, watch
+from padel_bot.bot import browse, start_links
 from padel_bot.bot.i18n import t
 from padel_bot.bot.keyboards import (
     DayCb,
@@ -222,7 +222,9 @@ async def test_slot_link_opens_the_slot_in_private_chat(venues):
     message = private_message()
     command = CommandObject(command="start", args=link_args(slot_cb(today())))
 
-    await browse.cmd_start_slot(message, command, availability, MagicMock(), RateLimiter(10, 60))
+    await start_links.open_slot_link(
+        message, command, availability, MagicMock(), RateLimiter(10, 60)
+    )
 
     availability.get_availability.assert_awaited()
     assert message.answer.await_args.args[0].startswith(t("ru", "slot_taken"))
@@ -233,7 +235,7 @@ async def test_bad_slot_link_starts_over(venues):
         availability = make_availability(venues, [])
         message = private_message()
 
-        await browse.cmd_start_slot(
+        await start_links.open_slot_link(
             message,
             CommandObject(command="start", args=args),
             availability,
@@ -250,7 +252,9 @@ async def test_slot_link_rate_limited(venues):
     message = private_message()
     command = CommandObject(command="start", args=link_args(slot_cb(today())))
 
-    await browse.cmd_start_slot(message, command, availability, MagicMock(), RateLimiter(0, 60))
+    await start_links.open_slot_link(
+        message, command, availability, MagicMock(), RateLimiter(0, 60)
+    )
 
     message.answer.assert_awaited_once_with(t("ru", "too_many_requests"))
     availability.booking_links.assert_not_awaited()
@@ -289,8 +293,8 @@ async def handled_by(router, args: str | None):
 async def test_deep_links_reach_their_handlers():
     slot = link_args(slot_cb(today()))
     hours = link_args(WatchDayCb(day=today(), rng="w"))
-    assert await handled_by(browse.browse_router, slot) is browse.cmd_start_slot
-    assert await handled_by(browse.browse_router, None) is browse.cmd_start
-    assert await handled_by(browse.browse_router, "anything") is browse.cmd_start
-    assert await handled_by(browse.browse_router, hours) is None
-    assert await handled_by(watch.watch_router, hours) is watch.cmd_start_watch
+    assert await handled_by(start_links.start_links_router, slot) is start_links.open_slot_link
+    assert await handled_by(start_links.start_links_router, hours) is start_links.open_watch_link
+    for plain in (None, "anything"):
+        assert await handled_by(start_links.start_links_router, plain) is None
+        assert await handled_by(browse.browse_router, plain) is browse.cmd_start

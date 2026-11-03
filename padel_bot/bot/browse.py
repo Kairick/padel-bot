@@ -3,7 +3,7 @@ from html import escape
 
 from aiogram import Bot, F, Router
 from aiogram.enums import ChatType
-from aiogram.filters import Command, CommandObject, CommandStart
+from aiogram.filters import Command, CommandStart
 from aiogram.types import CallbackQuery, InlineKeyboardMarkup, Message
 
 from padel_bot.bot.common import (
@@ -25,12 +25,8 @@ from padel_bot.bot.keyboards import (
     RANGES,
     DayCb,
     SlotCb,
-    WatchDayCb,
     days_keyboard,
-    is_start_link,
     normalize_range,
-    parse_day,
-    parse_start_link,
     slot_keyboard,
 )
 from padel_bot.bot.throttle import RateLimiter
@@ -49,32 +45,8 @@ fallback_router = Router(name="fallback")
 fallback_router.message.filter(F.chat.type != ChatType.PRIVATE)
 
 
-@browse_router.message(CommandStart(deep_link=True, magic=is_start_link(SlotCb)))
-async def cmd_start_slot(
-    message: Message,
-    command: CommandObject,
-    availability: AvailabilityService,
-    stats: Stats,
-    slot_limiter: RateLimiter,
-) -> None:
-    """A slot button of a group message: its booking links, in the private chat."""
-    user = message.from_user
-    lang = lang_of(user)
-    data = parse_start_link(command.args, SlotCb)
-    day = parse_day(data.day, current_play_day()) if data else None
-    if user is None or data is None or day is None or not 0 <= data.v < len(availability.venues):
-        # An old group message (the day has passed) or garbage: start over.
-        await cmd_start(message, stats)
-        return
-    if not slot_limiter.allow(user.id):
-        await message.answer(t(lang, "too_many_requests"))
-        return
-    text, markup = await slot_view(availability, stats, data, day, user.id, lang)
-    await message.answer(text, reply_markup=markup)
-
-
-# Not for the Watch links: watch_router opens those.
-@browse_router.message(CommandStart(magic=~is_start_link(WatchDayCb)))
+# Known deep links never get here: start_links_router comes first.
+@browse_router.message(CommandStart())
 @browse_router.message(Command("days"))
 @group_browse_router.message(Command("start", "days"))
 async def cmd_start(message: Message, stats: Stats) -> None:

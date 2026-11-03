@@ -7,6 +7,7 @@
 - Model: `Subscription` (`applies_to`, `matches`, `watches_venue`, `time_range`), `KnownMatch`, `ServiceState`, `MatchKey`.
 - Cycle types shared with the monitor: `SubscriptionPlan`, `CyclePlan`, `FreedTime` (a time in a notification).
 - Constants `FIRST_HOUR`, `LAST_HOUR`, `LAST_END_HOUR`, `MAX_HOURS`, `LEAD_TIME`; `slot_start`, `nearest_day`.
+- Card toggle rules (pure, used by watch-ui buttons): `toggle_kind`, `toggle_length` (1–3 h, ending by 02:00), `toggle_club` (any → each club → any), `toggle_courts` (1 ↔ 2).
 - `SubscriptionStore` CRUD: `create` (limit 5, unique), `update`, `get`, `list_for_chat`, `delete`, `delete_chat`, `set_lang`, `count_for_chat`.
 - Polling side: `all`, `has_subscriptions`, `known_matches`, `poll_state`, `apply_cycle(plan, now)`, `mark_notified`, `is_unchanged`, `cleanup`.
 - Errors: `SubscriptionLimitError`, `DuplicateSubscriptionError(existing_id)`.
@@ -24,6 +25,7 @@
 - `STATS_DB_PATH` — SQLite file (default `data/stats.sqlite3`; `/data/stats.sqlite3` on Fly).
 
 ## Tests
+- `tests/test_subscription.py` — card toggles.
 - `tests/test_store.py` — create/list, duplicates and limit, expiry of date subscriptions, schema CHECKs, `set_lang`, cascade, `apply_cycle` skip-if-changed, `mark_notified`, `cleanup`.
 
 ## Notes

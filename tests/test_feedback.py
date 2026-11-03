@@ -10,7 +10,7 @@ from aiogram.filters import CommandObject
 from aiogram.methods import ForwardMessage, SendMessage, TelegramMethod
 from aiogram.types import Message, Update, User
 
-from padel_bot.bot import browse, feedback, watch
+from padel_bot.bot import browse, feedback, start_links, watch
 from padel_bot.bot.i18n import t
 from padel_bot.bot.throttle import RateLimiter
 from padel_bot.reservio.service import Availability
@@ -307,6 +307,7 @@ def app():
     availability = MagicMock(venues=[])
     availability.get_availability = AsyncMock(return_value=Availability(day=date.today(), slots=[]))
     routers = [
+        start_links.start_links_router,
         browse.browse_router,
         browse.group_browse_router,
         watch.watch_router,

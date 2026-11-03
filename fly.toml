@@ -18,3 +18,9 @@ primary_region = "fra"
 [[vm]]
   size = "shared-cpu-1x"
   memory = "512mb"
+
+# Restart on any exit, without a retry limit. The bot exits with code 1 when the monitor dies
+# (main.py serve): with the default on-failure policy a crash loop would leave the machine
+# stopped for good after the retries run out. Each restart alerts ADMIN_IDS.
+[[restart]]
+  policy = "always"

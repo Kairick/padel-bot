@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date, datetime, time, timedelta
 
 from padel_bot.domain import TZ, Lang, TimeRange, current_play_day
@@ -95,3 +95,32 @@ class CyclePlan:
     service_states: dict[str, ServiceState]
     subscriptions: list[SubscriptionPlan]
     free: dict[MatchKey, list[CourtSlot]]  # free courts per match, for the notification
+
+
+# Subscription card toggles (watch-ui buttons): pure, return the subscription unchanged when
+# there's nothing to switch.
+
+
+def toggle_kind(sub: Subscription, now: datetime) -> Subscription:
+    if sub.day is not None:
+        return replace(sub, day=None, weekday=sub.day.weekday())
+    assert sub.weekday is not None
+    return replace(sub, day=nearest_day(sub.weekday, sub.hour_from, now), weekday=None)
+
+
+def toggle_length(sub: Subscription) -> Subscription:
+    for step in range(1, MAX_HOURS):
+        hours = (sub.hours - 1 + step) % MAX_HOURS + 1
+        if sub.hour_from + hours <= LAST_END_HOUR:
+            return replace(sub, hours=hours)
+    return sub
+
+
+def toggle_club(sub: Subscription, venues: list[Venue]) -> Subscription:
+    keys: list[str | None] = [None, *(v.key for v in venues)]
+    current = keys.index(sub.venue_key) if sub.venue_key in keys else 0
+    return replace(sub, venue_key=keys[(current + 1) % len(keys)])
+
+
+def toggle_courts(sub: Subscription) -> Subscription:
+    return replace(sub, min_courts=2 if sub.min_courts == 1 else 1)

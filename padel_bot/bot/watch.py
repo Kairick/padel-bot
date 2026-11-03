@@ -3,12 +3,11 @@
 Stateless: everything a step needs is in the callback data or in the stored subscription.
 """
 
-from dataclasses import replace
 from datetime import date, datetime
 from html import escape
 
 from aiogram import F
-from aiogram.filters import Command, CommandObject, CommandStart
+from aiogram.filters import Command
 from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
 
 from padel_bot.bot.common import (
@@ -30,23 +29,23 @@ from padel_bot.bot.keyboards import (
     WatchHourCb,
     days_keyboard,
     encode_day,
-    is_start_link,
     normalize_range,
     notification_keyboard,
     parse_day,
-    parse_start_link,
 )
 from padel_bot.domain import TZ, Lang, current_play_day
 from padel_bot.monitoring.models import (
     FIRST_HOUR,
-    LAST_END_HOUR,
     LAST_HOUR,
     LEAD_TIME,
-    MAX_HOURS,
     FreedTime,
     Subscription,
     nearest_day,
     slot_start,
+    toggle_club,
+    toggle_courts,
+    toggle_kind,
+    toggle_length,
 )
 from padel_bot.monitoring.store import (
     MAX_SUBSCRIPTIONS,
@@ -93,34 +92,6 @@ def club_label(sub: Subscription, venues: list[Venue], lang: Lang) -> str:
 def watch_hours(day: date, now: datetime) -> list[int]:
     """Hours of `day` still worth watching: at least LEAD_TIME before they start."""
     return [h for h in range(FIRST_HOUR, LAST_HOUR + 1) if slot_start(day, h) - now >= LEAD_TIME]
-
-
-# Card toggles: pure, return the subscription unchanged when there's nothing to switch.
-
-
-def toggle_kind(sub: Subscription, now: datetime) -> Subscription:
-    if sub.day is not None:
-        return replace(sub, day=None, weekday=sub.day.weekday())
-    assert sub.weekday is not None
-    return replace(sub, day=nearest_day(sub.weekday, sub.hour_from, now), weekday=None)
-
-
-def toggle_length(sub: Subscription) -> Subscription:
-    for step in range(1, MAX_HOURS):
-        hours = (sub.hours - 1 + step) % MAX_HOURS + 1
-        if sub.hour_from + hours <= LAST_END_HOUR:
-            return replace(sub, hours=hours)
-    return sub
-
-
-def toggle_club(sub: Subscription, venues: list[Venue]) -> Subscription:
-    keys: list[str | None] = [None, *(v.key for v in venues)]
-    current = keys.index(sub.venue_key) if sub.venue_key in keys else 0
-    return replace(sub, venue_key=keys[(current + 1) % len(keys)])
-
-
-def toggle_courts(sub: Subscription) -> Subscription:
-    return replace(sub, min_courts=2 if sub.min_courts == 1 else 1)
 
 
 # Views
@@ -221,19 +192,6 @@ async def cmd_watch(message: Message) -> None:
     await message.answer(
         t(lang, "watch_start"), reply_markup=days_keyboard(current_play_day(), lang)
     )
-
-
-@watch_router.message(CommandStart(deep_link=True, magic=is_start_link(WatchDayCb)))
-async def cmd_start_watch(message: Message, command: CommandObject) -> None:
-    """The Watch button of a group message: the hour grid of its day, in the private chat."""
-    data = parse_start_link(command.args, WatchDayCb)
-    day = parse_day(data.day, current_play_day()) if data else None
-    if data is None or day is None:
-        # An old group message (the day has passed) or garbage: pick another day.
-        await cmd_watch(message)
-        return
-    text, markup = hours_view(day, data.rng, lang_of(message.from_user), datetime.now(TZ))
-    await message.answer(text, reply_markup=markup)
 
 
 @watch_router.message(Command("subs"))

@@ -15,6 +15,7 @@ from aiogram.types import BotCommand
 from padel_bot.bot.browse import browse_router, fallback_router, group_browse_router
 from padel_bot.bot.feedback import feedback_router
 from padel_bot.bot.i18n import t
+from padel_bot.bot.start_links import start_links_router
 from padel_bot.bot.throttle import RateLimiter
 from padel_bot.bot.watch import notification_message, watch_router
 from padel_bot.config import get_settings, load_venues
@@ -46,8 +47,14 @@ def build_dispatcher(stats: Stats) -> Dispatcher:
     dp.message.outer_middleware(StatsMiddleware(stats))
     dp.callback_query.outer_middleware(StatsMiddleware(stats))
     # The fallback router goes last: it takes everything the private ones rejected.
+    # Deep links go first: they are /start too, and browse would take them as a plain one.
     dp.include_routers(
-        browse_router, group_browse_router, watch_router, feedback_router, fallback_router
+        start_links_router,
+        browse_router,
+        group_browse_router,
+        watch_router,
+        feedback_router,
+        fallback_router,
     )
     return dp
 
@@ -58,6 +65,23 @@ async def alert_admins(bot: Bot, admin_ids: frozenset[int], text: str) -> None:
             await bot.send_message(admin_id, text)
         except TelegramAPIError as e:
             log.warning("alert not delivered to admin %s: %s", admin_id, e)
+
+
+async def check_bot_settings(bot: Bot, admin_ids: frozenset[int]) -> None:
+    """Warn admins about BotFather settings the bot needs; they can't be set from code.
+
+    With "Allow Groups" off nobody can add the bot to a group, and the group features fail
+    silently: nothing from the group ever reaches the bot.
+    """
+    me = await bot.me()
+    if not me.can_join_groups:
+        log.warning("BotFather: Allow Groups is off, the bot can't be added to groups")
+        await alert_admins(
+            bot,
+            admin_ids,
+            "⚠️ <b>В BotFather выключено «Allow Groups»</b>: бота нельзя добавить в группу.\n"
+            "/mybots → бот → Bot Settings → Allow Groups → Turn on",
+        )
 
 
 async def serve(
@@ -117,6 +141,7 @@ async def main() -> None:
     try:
         await bot.set_my_commands(commands("en"))
         await bot.set_my_commands(commands("ru"), language_code="ru")
+        await check_bot_settings(bot, admin_ids)
         if settings.monitor_enabled:
             poller = Poller(
                 bot,

@@ -6,7 +6,7 @@ import pytest
 from aiogram.filters import CommandObject
 from aiogram.types import Message
 
-from padel_bot.bot import watch
+from padel_bot.bot import start_links, watch
 from padel_bot.bot.i18n import WEEKLY, t
 from padel_bot.bot.keyboards import (
     DayCb,
@@ -86,39 +86,6 @@ def test_watch_hours():
     assert watch.watch_hours(today, dt("2026-09-16T00:30:00")) == [25]
     assert watch.watch_hours(today, dt("2026-09-16T00:31:00")) == []
     assert watch.watch_hours(MON, NOW) == list(range(7, 26))
-
-
-def test_toggle_length_cycles_and_ends_by_two():
-    assert [watch.toggle_length(sub(hours=h)).hours for h in (1, 2, 3)] == [2, 3, 1]
-    assert [watch.toggle_length(sub(hour_from=24, hours=h)).hours for h in (1, 2)] == [2, 1]
-    assert watch.toggle_length(sub(hour_from=25)) == sub(hour_from=25)
-
-
-def test_toggle_club_and_courts(venues):
-    keys = []
-    current = sub()
-    for _ in range(3):
-        current = watch.toggle_club(current, venues)
-        keys.append(current.venue_key)
-    assert keys == ["pp", "gp", None]
-    assert watch.toggle_club(sub(venue_key="removed"), venues).venue_key == "pp"
-    assert watch.toggle_courts(sub()).min_courts == 2
-    assert watch.toggle_courts(sub(min_courts=2)).min_courts == 1
-
-
-def test_toggle_kind():
-    weekly = watch.toggle_kind(sub(), NOW)
-    assert (weekly.day, weekly.weekday) == (None, 0)
-    assert watch.toggle_kind(weekly, NOW).day == MON
-    # On Monday itself, too close to 16:00: next week.
-    assert watch.toggle_kind(weekly, dt("2026-09-21T15:40:00")).day == date(2026, 9, 28)
-    assert watch.toggle_kind(weekly, dt("2026-09-21T15:20:00")).day == MON
-    # 03:00 on Monday is still Sunday's play day, so Monday is later today.
-    assert watch.toggle_kind(weekly, dt("2026-09-21T03:00:00")).day == MON
-    # Monday 01:00 is the night after Monday: at 00:40 on Tuesday it's still coming.
-    late = sub(day=None, weekday=0, hour_from=25)
-    assert watch.toggle_kind(late, dt("2026-09-22T00:20:00")).day == MON
-    assert watch.toggle_kind(late, dt("2026-09-22T00:40:00")).day == date(2026, 9, 28)
 
 
 def buttons(markup) -> list[list[str]]:
@@ -353,7 +320,7 @@ async def test_watch_link_opens_the_hour_grid_in_private_chat():
     message.answer = AsyncMock()
     args = start_link("padel_bot", WatchDayCb(day=encode_day(day), rng="e")).split("=", 1)[1]
 
-    await watch.cmd_start_watch(message, CommandObject(command="start", args=args))
+    await start_links.open_watch_link(message, CommandObject(command="start", args=args))
 
     assert message.answer.await_args.args[0].endswith(t("ru", "watch_pick_hour"))
 
@@ -362,6 +329,6 @@ async def test_old_watch_link_offers_another_day():
     message = MagicMock(from_user=MagicMock(language_code="ru"))
     message.answer = AsyncMock()
 
-    await watch.cmd_start_watch(message, CommandObject(command="start", args="wh_20000101_w"))
+    await start_links.open_watch_link(message, CommandObject(command="start", args="wh_20000101_w"))
 
     assert message.answer.await_args.args[0] == t("ru", "watch_start")
