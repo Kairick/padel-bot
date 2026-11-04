@@ -222,11 +222,11 @@ async def test_slot_link_opens_the_slot_in_private_chat(venues):
     message = private_message()
     command = CommandObject(command="start", args=link_args(slot_cb(today())))
 
-    await start_links.open_slot_link(
-        message, command, availability, MagicMock(), RateLimiter(10, 60)
-    )
+    stats = MagicMock()
+    await start_links.open_slot_link(message, command, availability, stats, RateLimiter(10, 60))
 
     availability.get_availability.assert_awaited()
+    stats.track_event.assert_called_once_with("slot_link")  # the slot is taken: no slot_view
     assert message.answer.await_args.args[0].startswith(t("ru", "slot_taken"))
 
 
@@ -268,13 +268,15 @@ async def test_group_day_view_links_watch_to_private_chat(venues):
     bot = MagicMock()
     bot.me = AsyncMock(return_value=MagicMock(username="padel_bot"))
 
+    stats = MagicMock()
     await browse.on_day(
-        cb, DayCb(day=today(), rng="w"), availability, MagicMock(), RateLimiter(10, 60), bot
+        cb, DayCb(day=today(), rng="w"), availability, stats, RateLimiter(10, 60), bot
     )
 
     markup = cb.message.edit_text.await_args.kwargs["reply_markup"]
     watch = markup.inline_keyboard[-2][0]
     assert watch.url.startswith("https://t.me/padel_bot?start=wh_")
+    stats.track_event.assert_called_once_with("group_day_view")
 
 
 async def handled_by(router, args: str | None):

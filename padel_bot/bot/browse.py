@@ -32,7 +32,7 @@ from padel_bot.bot.keyboards import (
 from padel_bot.bot.throttle import RateLimiter
 from padel_bot.domain import Lang, current_play_day
 from padel_bot.reservio.service import AvailabilityService
-from padel_bot.stats import Stats, format_summary
+from padel_bot.stats import Stats, chat_event, format_summary
 
 browse_router = private_router("private")
 # Free slots in groups; the day view there links slots to the private chat.
@@ -51,7 +51,7 @@ fallback_router.message.filter(F.chat.type != ChatType.PRIVATE)
 @group_browse_router.message(Command("start", "days"))
 async def cmd_start(message: Message, stats: Stats) -> None:
     lang = lang_of(message.from_user)
-    stats.track_event("start")
+    stats.track_event(chat_event("start", message.chat.type))
     await message.answer(t(lang, "welcome"), reply_markup=days_keyboard(current_play_day(), lang))
 
 
@@ -78,7 +78,7 @@ async def answer_day_view(
     message: Message, availability: AvailabilityService, stats: Stats, bot: Bot, day: date
 ) -> None:
     lang = lang_of(message.from_user)
-    stats.track_event("day_view")
+    stats.track_event(chat_event("day_view", message.chat.type))
     username = await link_target(message.chat.type, bot)
     text, markup = await build_day_view(
         availability, day, DEFAULT_RANGE, lang, bot_username=username
@@ -136,7 +136,7 @@ async def on_day(
     if refresh and not refresh_limiter.allow(cb.from_user.id):
         await answer_quietly(cb, t(lang, "too_many_requests"), show_alert=True)
         return
-    stats.track_event("refresh" if refresh else "day_view")
+    stats.track_event(chat_event("refresh" if refresh else "day_view", message.chat.type))
     await answer_quietly(cb, t(lang, "refreshing") if refresh else None)
     username = await link_target(message.chat.type, bot)
     text, markup = await build_day_view(

@@ -50,12 +50,13 @@ async def open_slot_link(
     if not slot_limiter.allow(user.id):
         await message.answer(t(lang, "too_many_requests"))
         return
+    stats.track_event("slot_link")
     text, markup = await slot_view(availability, stats, data, day, user.id, lang)
     await message.answer(text, reply_markup=markup)
 
 
 @start_links_router.message(CommandStart(deep_link=True, magic=is_start_link(WatchDayCb)))
-async def open_watch_link(message: Message, command: CommandObject) -> None:
+async def open_watch_link(message: Message, command: CommandObject, stats: Stats) -> None:
     """The Watch button of a group message: the hour grid of its day."""
     data = parse_start_link(command.args, WatchDayCb)
     day = parse_day(data.day, current_play_day()) if data else None
@@ -63,5 +64,6 @@ async def open_watch_link(message: Message, command: CommandObject) -> None:
         # An old group message (the day has passed) or garbage: pick another day.
         await cmd_watch(message)
         return
+    stats.track_event("watch_link")
     text, markup = hours_view(day, data.rng, lang_of(message.from_user), datetime.now(TZ))
     await message.answer(text, reply_markup=markup)

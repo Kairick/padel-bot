@@ -1,12 +1,14 @@
 from datetime import datetime
+from unittest.mock import AsyncMock
 
 import pytest
+from aiogram.types import CallbackQuery, Chat, Message, User
 from pydantic import ValidationError
 
 from padel_bot.config import Settings
 from padel_bot.db import connect
 from padel_bot.domain import TZ
-from padel_bot.stats import Stats, format_summary
+from padel_bot.stats import Stats, StatsMiddleware, chat_event, format_summary
 
 NOW = datetime(2026, 9, 20, 12, 0, tzinfo=TZ)
 SALT = "test-salt"
@@ -133,3 +135,42 @@ def test_settings_from_env(monkeypatch):
     assert settings.admin_ids == []
     assert settings.stats_salt is None
     assert not settings.monitor_enabled
+
+
+def test_group_events_and_groups(tmp_path):
+    stats = Stats(connect(tmp_path / "stats.sqlite3"), SALT)
+    assert chat_event("day_view", "private") == "day_view"
+    assert chat_event("day_view", "supergroup") == "group_day_view"
+    stats.track_group(-100, now=at(20))
+    stats.track_group(-100, now=at(19))  # same group, another day
+    stats.track_group(-200, now=at(10))  # 10 days ago: in 30d, not in 7d
+    stats.track_event("group_day_view", now=at(20))
+    stats.track_event("slot_link", now=at(20))
+
+    s = stats.summary(now=NOW)
+    assert (s.groups_7d, s.groups_30d) == (1, 2)
+    assert s.users_total == 0  # groups are not users
+    text = format_summary(s, {})
+    assert "групп: 1 · за 30 дней 2" in text
+    assert "перешли к времени: 1" in text
+
+
+async def test_middleware_counts_groups_not_private_chats(tmp_path):
+    stats = Stats(connect(tmp_path / "stats.sqlite3"), SALT)
+    middleware = StatsMiddleware(stats)
+    user = User(id=1, is_bot=False, first_name="A", language_code="ru")
+
+    def message(chat_id: int, chat_type: str) -> Message:
+        chat = Chat(id=chat_id, type=chat_type)
+        return Message(message_id=1, date=NOW, chat=chat, from_user=user, text="/today")
+
+    handler = AsyncMock()
+    await middleware(handler, message(1, "private"), {})
+    await middleware(handler, message(-100, "group"), {})
+    tap = CallbackQuery(
+        id="1", from_user=user, chat_instance="c", message=message(-200, "supergroup")
+    )
+    await middleware(handler, tap, {})
+
+    s = stats.summary()
+    assert (s.users_today, s.groups_7d) == (1, 2)

@@ -26,6 +26,7 @@ flowchart LR
   browse --> views[bot-views]
   browse --> stats
   links[start-links] --> browse
+  links --> stats
   links --> watch
   watch[watch-ui] --> subs[subscriptions]
   watch --> views

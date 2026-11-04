@@ -17,7 +17,7 @@
 ## Depends on
 - [availability](availability.md) — slots, booking links, venue list.
 - [bot-views](bot-views.md) — texts, keyboards (group mode via `bot_username`), callback data, deep links, `parse_day`.
-- [stats](stats.md) — `track_event`, `summary`, `format_summary`.
+- [stats](stats.md) — `track_event` (`chat_event`: group actions as `group_*`), `summary`, `format_summary`.
 - Shared `padel_bot/bot/common.py` (routers, `link_target`, handler helpers), `padel_bot/domain.py`, `padel_bot/bot/throttle.py`, `padel_bot/bot/i18n.py`.
 
 ## Config

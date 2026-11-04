@@ -11,10 +11,12 @@
 ## Owns
 - External effects: a slot link creates Reservio draft orders, through browse `slot_view`.
 - In-memory: nothing; uses the injected `slot_limiter` (20/min, shared with slot taps).
+- Stats: counts `slot_link` / `watch_link` (through [stats](stats.md) `track_event`).
 
 ## Depends on
 - [browse](browse.md) — `slot_view`, `cmd_start` (fallback screen).
 - [watch-ui](watch-ui.md) — `hours_view`, `cmd_watch` (fallback screen).
+- [stats](stats.md) — `track_event`.
 - [bot-views](bot-views.md) — `is_start_link`, `parse_start_link`, `parse_day`, `SlotCb`, `WatchDayCb`.
 - Shared `padel_bot/bot/common.py` (`private_router`, `lang_of`), `padel_bot/domain.py`.
 

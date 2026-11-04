@@ -320,15 +320,18 @@ async def test_watch_link_opens_the_hour_grid_in_private_chat():
     message.answer = AsyncMock()
     args = start_link("padel_bot", WatchDayCb(day=encode_day(day), rng="e")).split("=", 1)[1]
 
-    await start_links.open_watch_link(message, CommandObject(command="start", args=args))
+    stats = MagicMock()
+    await start_links.open_watch_link(message, CommandObject(command="start", args=args), stats)
 
     assert message.answer.await_args.args[0].endswith(t("ru", "watch_pick_hour"))
+    stats.track_event.assert_called_once_with("watch_link")
 
 
 async def test_old_watch_link_offers_another_day():
     message = MagicMock(from_user=MagicMock(language_code="ru"))
     message.answer = AsyncMock()
 
-    await start_links.open_watch_link(message, CommandObject(command="start", args="wh_20000101_w"))
+    old = CommandObject(command="start", args="wh_20000101_w")
+    await start_links.open_watch_link(message, old, MagicMock())
 
     assert message.answer.await_args.args[0] == t("ru", "watch_start")
